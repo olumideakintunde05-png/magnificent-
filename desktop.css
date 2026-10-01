@@ -674,7 +674,7 @@
   /* ---- ABOUT / LEGAL ---- */
   body:has(.legal-content[data-doc="about"]) main > .page-head{
     width:100%; margin:0 0 -56px; padding:96px 24px 130px; text-align:center;
-    background:linear-gradient(180deg, rgba(10,17,32,.6), rgba(10,17,32,.88)), url("images/bg-2.jpg") center/cover no-repeat;
+    background:linear-gradient(180deg, rgba(10,17,32,.6), rgba(10,17,32,.88)), url("images/bg-2.jpg") center/cover no-repeat, url("bg-2.jpg") center/cover no-repeat;
   }
   body:has(.legal-content[data-doc="about"]) main > .page-head h1{ color:#fff; font-size:48px; }
   body:has(.legal-content[data-doc="about"]) main > .page-head p{ color:rgba(255,255,255,.85); font-size:17px; }
@@ -692,7 +692,7 @@
   .auth-desk-logo span{ font-family:var(--font-head); font-size:15px; line-height:1.15; color:var(--ink); letter-spacing:1px; }
   .auth-desk-title h2{ font-size:30px; color:var(--ink); margin:0 0 6px; }
   .auth-desk-title p{ font-size:15px; color:var(--text-muted); margin:0 0 24px; }
-  .auth-brand{ flex:1 1 auto !important; border-radius:0 !important; padding:0 !important; display:flex; align-items:flex-end; background:linear-gradient(180deg, rgba(10,17,32,.3) 0%, rgba(10,17,32,.88) 100%), url("images/bg-1.jpg") center/cover no-repeat !important; }
+  .auth-brand{ flex:1 1 auto !important; border-radius:0 !important; padding:0 !important; display:flex; align-items:flex-end; background:linear-gradient(180deg, rgba(10,17,32,.3) 0%, rgba(10,17,32,.88) 100%), url("images/bg-1.jpg") center/cover no-repeat, url("bg-1.jpg") center/cover no-repeat !important; }
   .auth-brand .auth-close{ position:absolute; top:22px; right:22px; z-index:5; }
   .auth-brand-body, .auth-arch{ display:none !important; }
   .auth-brand::after{ content:"Luxury\A Comfort\A Unforgettable"; white-space:pre; position:absolute; left:56px; bottom:64px; text-align:left; font-family:var(--font-head); font-size:46px; line-height:1.15; color:#fff; font-weight:600; z-index:2; }

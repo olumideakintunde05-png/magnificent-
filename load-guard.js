@@ -122,16 +122,49 @@
   }, PAGE_SLOW_MS);
   window.addEventListener("load", function(){ clearTimeout(pageTimer); unbanner("lgSlowPage"); });
 
-  /* ---------- photos: soft placeholder if one fails ---------- */
+  /* ---------- photos ----------
+     1. If a photo under /images/ is missing, try the same file at the top
+        level of the site once. (Some upload methods — e.g. GitHub's phone
+        upload — drop the images folder and leave the files loose.)
+     2. If it still fails, show a soft placeholder instead of an empty gap. */
+  function rootFallback(src){
+    try{
+      var u = new URL(src, location.href);
+      if(u.origin !== location.origin) return "";
+      if(!/\/images\/[^/]+$/i.test(u.pathname)) return "";
+      u.pathname = u.pathname.replace(/\/images\/([^/]+)$/i, "/$1");
+      return u.pathname + u.search;
+    }catch(e){ return ""; }
+  }
   document.addEventListener("error", function(e){
     var img = e.target;
     if(!img || img.tagName !== "IMG") return;
+
+    if(!img.__lgRetried){
+      var alt = rootFallback(img.currentSrc || img.src);
+      if(alt){
+        img.__lgRetried = true;
+        img.removeAttribute("srcset");
+        img.src = alt;
+        e.stopImmediatePropagation();   // not a real failure yet
+        return;
+      }
+    }
+
     // Stacked slideshow: just hide the broken photo, the others keep working
     if(img.closest(".gallery-main")){ img.style.visibility = "hidden"; return; }
     var box = img.closest(".property-media, .gallery-item, .location-chip-img, .gallery-thumb, .review-media");
     if(!box) return;
     img.style.visibility = "hidden";
     box.classList.add("lg-img-failed");
+  }, true);
+  // a photo that recovers (e.g. via the fallback) clears the placeholder
+  document.addEventListener("load", function(e){
+    var img = e.target;
+    if(!img || img.tagName !== "IMG") return;
+    img.style.visibility = "";
+    var box = img.closest(".lg-img-failed");
+    if(box) box.classList.remove("lg-img-failed");
   }, true);
 
   function init(){
