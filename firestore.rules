@@ -1,0 +1,124 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+    // Admin = the owner email below, or anyone listed in admins/<email>.
+    // (Keep the owner email in sync with OWNER_EMAILS in firebase-init.js.)
+    function isAdmin() {
+      return signedIn() && (
+        myEmail() == 'magnificenthomes4u@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(myEmail()))
+      );
+    }
+
+    // Public site content: anyone can read, only admins can change.
+    match /properties/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /reviews/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /gallery/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id}   { allow read: if true; allow write: if isAdmin(); }
+    // Editable wording and home-page sections (FAQ, Privacy, Terms, About,
+    // site text, locations, styles, why-choose-us).
+    match /content/{id}    { allow read: if true; allow write: if isAdmin(); }
+
+    // Promo codes: a guest can look up one code they typed, but nobody can
+    // list them all. Guests may only add one to a code's "usedCount".
+    match /promos/{code} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount']) &&
+        request.resource.data.usedCount == resource.data.usedCount + 1
+      );
+    }
+
+    // Booking enquiries.
+    //  - Anyone can submit one, but a booking can only carry the sender's OWN
+    //    account id (or none, for a guest who isn't logged in), always starts
+    //    as "New", and can only contain the fields the booking form sends.
+    //  - A guest can read only their own. Only admins can change or delete.
+    match /enquiries/{id} {
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'id', 'uid', 'status', 'orderNo', 'property', 'propertyLocation',
+          'name', 'phone', 'checkin', 'checkout', 'guests', 'promo', 'discount',
+          'paymentMethod', 'nights', 'total', 'reference', 'submittedAt'
+        ]) &&
+        request.resource.data.status == 'New' &&
+        (
+          !('uid' in request.resource.data) ||
+          (signedIn() && request.resource.data.uid == request.auth.uid)
+        ) &&
+        request.resource.data.name is string && request.resource.data.name.size() <= 120 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() <= 40 &&
+        request.resource.data.property is string && request.resource.data.property.size() <= 200;
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // "Just booked" pop-up feed: only a first name, a last initial, the area and
+    // the time — nothing else. The website adds an entry right after a real
+    // booking is saved (the rule checks that the booking exists); admins can
+    // add, change or remove entries (for example when a booking is cancelled).
+    match /bookingFeed/{id} {
+      allow read: if true;
+      allow create: if isAdmin() || (
+        exists(/databases/$(database)/documents/enquiries/$(id)) &&
+        request.resource.data.keys().hasOnly(['name', 'location', 'at']) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.matches('^[^<>]{1,40}$') &&
+        request.resource.data.location is string &&
+        request.resource.data.location.matches('^[^<>]{0,80}$') &&
+        request.resource.data.at is string && request.resource.data.at.size() <= 40
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    // Booking order numbers ("magnificent-shortlet 001", ...). Anyone booking
+    // may bump the counter, but only by exactly one.
+    match /counters/{id} {
+      allow read: if true;
+      allow create: if id == 'orders' && request.resource.data.n == 1;
+      allow update: if id == 'orders' && request.resource.data.n == resource.data.n + 1;
+    }
+
+    // Guest accounts: each user maintains only their OWN record (and it must
+    // carry their own account id and email); admins can read all.
+    match /users/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create, update: if signedIn() && request.auth.uid == uid &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'email', 'name', 'phone', 'createdAt', 'lastActiveAt', 'notifSeenAt'
+        ]) &&
+        request.resource.data.uid == uid &&
+        request.resource.data.email.lower() == myEmail();
+      allow delete: if isAdmin();
+    }
+
+    // Notifications sent from the admin panel.
+    //  broadcasts/<id>     — for every signed-in guest
+    //  notifications/<id>  — for one guest (toUid); only that guest can read it
+    match /broadcasts/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /notifications/{id} {
+      allow read: if isAdmin() || (signedIn() && resource.data.toUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // Extra admins. A person can read their own entry (that's how the login
+    // page checks access); only admins can add or remove entries.
+    match /admins/{adminEmail} {
+      allow read: if isAdmin() || (signedIn() && myEmail() == adminEmail);
+      allow write: if isAdmin();
+    }
+  }
+}

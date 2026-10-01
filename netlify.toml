@@ -1,0 +1,15 @@
+[build]
+  # Injects your Netlify environment variable (PAYSTACK_PUBLIC_KEY)
+  # into config.js at deploy time, replacing the placeholder token.
+  # Set PAYSTACK_PUBLIC_KEY in: Site settings → Environment variables.
+  command = "sed -i \"s/__PAYSTACK_PUBLIC_KEY__/$PAYSTACK_PUBLIC_KEY/g\" config.js"
+  publish = "."
+
+# Safe-by-default browser headers for every page.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Shortlet Magnificent | Luxury Shortlet Apartments in Lagos</title>
+<meta name="description" content="Shortlet Magnificent — verified 5-star shortlet apartments in Lekki, Ikoyi, Victoria Island and Oniru. Book your stay via WhatsApp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="desktop.css">
+<script src="error-handler.js"></script>
+<script src="skeleton-loader.js"></script>
+<script src="load-guard.js"></script>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="site-header" id="siteHeader">
+  <a href="index.html" class="brand">
+    <span class="brand-icon" aria-hidden="true">
+      <img src="images/logo-icon.png?v=2" alt="Shortlet Magnificent" style="width:100%;height:100%;object-fit:contain;">
+    </span>
+    <span class="brand-text">
+      <span class="brand-name">SHORTLET</span>
+      <span class="brand-name">MAGNIFICENT</span>
+    </span>
+  </a>
+
+
+  <nav class="desktop-nav" aria-label="Desktop primary navigation">
+    <a href="index.html" aria-current="page">Home</a>
+    <a href="properties.html">Properties</a>
+    <a href="index.html#locations">Locations</a>
+    <a href="about.html">About</a>
+    <a href="help.html">Contact</a>
+  </nav>
+  <div class="desktop-header-icons">
+    <a href="properties.html" class="dh-icon" aria-label="Search stays"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="M16 16L20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
+    <a href="profile.html" class="dh-icon" aria-label="My account"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M5 20C5 16.4 8 14 12 14C16 14 19 16.4 19 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
+  </div>
+  <a class="desktop-header-action" href="properties.html">Book a Stay</a>
+  <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false" aria-controls="navDrawer">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+</header>
+
+<!-- ============ NAV DRAWER ============ -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<nav class="nav-drawer" id="navDrawer" aria-hidden="true">
+  <div class="drawer-top">
+    <a href="index.html" class="brand">
+      <span class="brand-icon" aria-hidden="true">
+        <img src="images/logo-icon.png?v=2" alt="Shortlet Magnificent" style="width:100%;height:100%;object-fit:contain;">
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">SHORTLET</span>
+        <span class="brand-name">MAGNIFICENT</span>
+      </span>
+    </a>
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="#f0c48d" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <ul class="drawer-nav">
+    <li>
+      <a href="index.html" class="drawer-link active">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M4 11L12 4L20 11V19C20 19.5523 19.5523 20 19 20H15V14H9V20H5C4.44772 20 4 19.5523 4 19V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Home</span>
+      </a>
+    </li>
+    <li>
+      <a href="properties.html" class="drawer-link">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M4 21V9L12 3L20 9V21H14V14H10V21H4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Stays</span>
+      </a>
+    </li>
+    <li>
+      <a href="about.html" class="drawer-link">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M5 20C5 16.5 8 14 12 14C16 14 19 16.5 19 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>About Us</span>
+      </a>
+    </li>
+    <li>
+      <a href="faq.html" class="drawer-link">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M9.6 9.5C9.8 8.2 10.8 7.5 12 7.5C13.3 7.5 14.4 8.3 14.4 9.5C14.4 10.9 12 11 12 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.2" r="0.9" fill="currentColor"/></svg>
+        <span>FAQ</span>
+      </a>
+    </li>
+    <li>
+      <a href="#footer" class="drawer-link">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M4 6L12 13L20 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Contact</span>
+      </a>
+    </li>
+  </ul>
+
+  <button type="button" id="authBtn" class="drawer-auth-btn">Log In</button>
+  <a href="tel:+2348142230897" class="drawer-contact-btn">Contact Us</a>
+</nav>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-visual">
+      <div class="hero-media" id="heroMedia">
+        <img class="hero-bg-slide active" src="images/bg-1.jpg" alt="Shortlet Magnificent apartment">
+        <img class="hero-bg-slide" src="images/bg-2.jpg" alt="Shortlet Magnificent apartment">
+        <img class="hero-bg-slide" src="images/bg-3.jpg" alt="Shortlet Magnificent apartment">
+        <img class="hero-bg-slide" src="images/bg-4.jpg" alt="Shortlet Magnificent apartment">
+      </div>
+      <div class="hero-fade"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="hero-eyebrow desk-only"><svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M12 21C12 21 19 15.1 19 10.2C19 6.2 15.9 3 12 3C8.1 3 5 6.2 5 10.2C5 15.1 12 21 12 21Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>LAGOS, NIGERIA</p>
+        <h1><span class="hero-line" data-cms="hero_line1">Book Your</span><span class="hero-line gold" data-cms="hero_line2">Luxury Stay</span><span class="hero-line" data-cms="hero_line3">in Lagos</span></h1>
+        <p class="hero-sub" data-cms="hero_sub" data-cms-lines>Studios. Apartments. Maisonettes.<br>Verified, Fully Furnished Stays.</p>
+        <div class="hero-actions">
+          <a href="#properties" class="btn btn-gold">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 11L12 4L20 11V19C20 19.5523 19.5523 20 19 20H15V14H9V20H5C4.44772 20 4 19.5523 4 19V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            Browse Stays
+          </a>
+          <a href="tel:+2348142230897" class="btn btn-outline">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M6.6 10.8C8 13.6 10.4 16 13.2 17.4L15.4 15.2C15.7 14.9 16.1 14.8 16.5 14.9C17.7 15.3 19 15.5 20.3 15.5C20.9 15.5 21.3 15.9 21.3 16.5V20C21.3 20.6 20.9 21 20.3 21C10.9 21 3.3 13.4 3.3 4C3.3 3.4 3.7 3 4.3 3H7.8C8.4 3 8.8 3.4 8.8 4C8.8 5.3 9 6.6 9.4 7.8C9.5 8.2 9.4 8.6 9.1 8.9L6.6 10.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            Contact Us
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURED PROPERTIES ============ -->
+  <section class="section" id="properties">
+    <div class="section-head">
+      <h2>Featured Stays<span class="head-underline"></span></h2>
+      <a href="properties.html" class="view-all">View All
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+
+    <div class="property-scroll" id="propertyScroll"></div>
+    <div class="scroll-dots" id="propertyDots"></div>
+  </section>
+
+  <!-- ============ SEARCH STAYS ============ -->
+  <section class="section search-section" id="search">
+    <div class="section-head">
+      <h2>Find Your Stay<span class="head-underline"></span></h2>
+    </div>
+    <div class="search-card">
+      <div class="search-field" id="fieldLocation" data-field="location">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 21C12 21 19 15.1 19 10.2C19 6.2 15.9 3 12 3C8.1 3 5 6.2 5 10.2C5 15.1 12 21 12 21Z" stroke="#f0c48d" stroke-width="1.7"/><circle cx="12" cy="10" r="2.5" stroke="#f0c48d" stroke-width="1.7"/></svg>
+        </span>
+        <span class="search-text">
+          <label>Location</label>
+          <span class="search-value">Select Location</span>
+        </span>
+        <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M6 9L12 15L18 9" stroke="#9AA3B2" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <div class="search-divider"></div>
+      <div class="search-field" id="fieldType" data-field="type">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 21V9L12 3L20 9V21H14V14H10V21H4Z" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="search-text">
+          <label>Apartment Type</label>
+          <span class="search-value">All Types</span>
+        </span>
+        <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M6 9L12 15L18 9" stroke="#9AA3B2" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <div class="search-divider"></div>
+      <div class="search-field" id="fieldPrice" data-field="price">
+        <span class="search-icon gold-dollar">₦</span>
+        <span class="search-text">
+          <label>Price Range</label>
+          <span class="search-value">Any Price</span>
+        </span>
+        <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M6 9L12 15L18 9" stroke="#9AA3B2" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+
+      <button class="btn btn-gold btn-full" id="searchBtn">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.6 16.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Search Stays
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ TRUST / VALUE ============ -->
+  <section class="trust-section">
+    <div class="trust-item">
+      <span class="trust-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M4 11L12 4L20 11V19C20 19.5523 19.5523 20 19 20H15V14H9V20H5C4.44772 20 4 19.5523 4 19V11Z" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </span>
+      <h3>Trusted <br>By Guests</h3>
+      <p>3,000+ happy stays</p>
+    </div>
+    <div class="trust-item">
+      <span class="trust-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M12 3L19 6V11C19 15.4 16 19.3 12 21C8 19.3 5 15.4 5 11V6L12 3Z" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 12L11.3 13.8L15 10" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <h3>Verified &amp; Secure</h3>
+      <p>Every listing personally inspected</p>
+    </div>
+    <div class="trust-item">
+      <span class="trust-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M3 15L7 11L10.5 14L15 9L21 15" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 9H21V14" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <h3>24/7 Support</h3>
+      <p>On WhatsApp, check-in to check-out</p>
+    </div>
+
+    <div class="trust-item desk-only">
+      <span class="trust-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="3.5" y="6" width="17" height="12" rx="2" stroke="#f0c48d" stroke-width="1.7"/><path d="M3.5 10H20.5" stroke="#f0c48d" stroke-width="1.7"/></svg>
+      </span>
+      <h3>Secure Payments</h3>
+      <p>Safe &amp; reliable</p>
+    </div>
+
+    <div class="trust-divider"></div>
+
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-num">500+</span><span class="stat-lbl">Luxury Stays</span></div>
+      <div class="stat-item"><span class="stat-num">3,000+</span><span class="stat-lbl">Happy Guests</span></div>
+      <div class="stat-item"><span class="stat-num">4.9</span><span class="stat-lbl">Average Rating</span></div>
+      <div class="stat-item"><span class="stat-num">No</span><span class="stat-lbl">Hidden Fees</span></div>
+    </div>
+  </section>
+
+  <!-- ============ AMENITIES ============ -->
+  <section class="section" id="amenities">
+    <div class="section-head">
+      <h2>Amenities You'll Enjoy<span class="head-underline underline-wine"></span></h2>
+    </div>
+    <p class="demo-label">Standard across our verified apartments.</p>
+
+    <div class="amenities-grid">
+      <div class="amenity-card">
+        <span class="amenity-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 17C4 15.5 5.5 15.5 6.5 17C7.5 18.5 9 18.5 10 17C11 15.5 12.5 15.5 13.5 17C14.5 18.5 16 18.5 17 17C18 15.5 19.5 15.5 20.5 17" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round"/><path d="M6 15V6.5C6 5.67 6.67 5 7.5 5C8.33 5 9 5.67 9 6.5V15" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round"/><path d="M12 15V9C12 8.17 12.67 7.5 13.5 7.5C14.33 7.5 15 8.17 15 9V15" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="amenity-label">Swimming Pool</span>
+      </div>
+      <div class="amenity-card">
+        <span class="amenity-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M6 7V17M18 7V17M3 12H6M18 12H21" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round"/><path d="M6 9H18V15H6V9Z" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="amenity-label">Gym Access</span>
+      </div>
+      <div class="amenity-card">
+        <span class="amenity-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3.5 9.5C8.5 5 15.5 5 20.5 9.5" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round"/><path d="M6.5 13C9.7 10.3 14.3 10.3 17.5 13" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round"/><path d="M9.7 16.3C11 15.2 13 15.2 14.3 16.3" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="19" r="1.2" fill="#f0c48d"/></svg>
+        </span>
+        <span class="amenity-label">Fast WiFi</span>
+      </div>
+      <div class="amenity-card">
+        <span class="amenity-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M5 20V6C5 4.9 5.9 4 7 4H13C15.8 4 18 6.2 18 9C18 11.8 15.8 14 13 14H8" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="amenity-label">Secure Parking</span>
+      </div>
+      <div class="amenity-card">
+        <span class="amenity-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M13 3L5 14H11L10 21L19 9H13L13 3Z" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="amenity-label">24/7 Power</span>
+      </div>
+      <div class="amenity-card">
+        <span class="amenity-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M12 3L19 6V11C19 15.4 16 19.3 12 21C8 19.3 5 15.4 5 11V6L12 3Z" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 12L11.3 13.8L15 10" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="amenity-label">24/7 Security</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ REVIEWS ============ -->
+  <section class="section" id="testimonials">
+    <div class="section-head">
+      <h2>What Our Guests Say<span class="head-underline"></span></h2>
+      <a href="reviews.html" class="view-all">View All
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+    <p class="demo-label">Real feedback from guests who've stayed with us.</p>
+
+    <div class="review-carousel">
+      <button type="button" class="carousel-arrow" id="reviewPrev" aria-label="Previous review">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="review-track" id="reviewScroll"></div>
+      <button type="button" class="carousel-arrow" id="reviewNext" aria-label="Next review">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="scroll-dots" id="reviewDots"></div>
+  </section>
+
+  <!-- ============ CTA: FIND OR LIST ============ -->
+  <section class="section section-tight-top">
+    <div class="cta-compact">
+      <div class="cta-icon">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><path d="M4 11L12 4L20 11V19C20 19.5523 19.5523 20 19 20H15V14H9V20H5C4.44772 20 4 19.5523 4 19V11Z" stroke="#f0c48d" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="cta-text">
+        <h3 data-cms="cta_title">Ready to Book Your Stay?</h3>
+        <p data-cms="cta_text">Chat with us on WhatsApp and let's sort your dates.</p>
+      </div>
+      <a href="https://wa.me/2348142230897" target="_blank" rel="noopener" class="btn btn-gold btn-sm">Get Started
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ POPULAR LOCATIONS ============ -->
+  <section class="section" id="locations">
+    <div class="section-head">
+      <h2>Popular Locations<span class="head-underline underline-wine"></span></h2>
+      <a href="properties.html" class="view-all">View All
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+    <div class="location-chip-row" id="locationChips"></div>
+  </section>
+
+  <!-- ============ PROPERTY CATEGORIES ============ -->
+  <section class="section" id="categories">
+    <div class="section-head">
+      <h2>Browse by Type<span class="head-underline"></span></h2>
+    </div>
+    <div class="category-grid" id="categoryGrid"></div>
+  </section>
+
+  <!-- ============ WHY CHOOSE US ============ -->
+  <section class="section" id="why">
+    <div class="section-head">
+      <h2 data-cms="why_title">Why Choose Us<span class="head-underline"></span></h2>
+    </div>
+    <div class="why-list">
+      <div class="why-card">
+        <span class="why-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M12 3L19 6V11C19 15.4 16 19.3 12 21C8 19.3 5 15.4 5 11V6L12 3Z" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 12L11.3 13.8L15 10" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div>
+          <h4 data-cms="why1_title">Verified Listings</h4>
+          <p data-cms="why1_text">All properties are carefully verified for your peace of mind.</p>
+        </div>
+      </div>
+      <div class="why-card">
+        <span class="why-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M12 21C16 18.5 19 14.5 19 10V5L12 3L5 5V10C5 14.5 8 18.5 12 21Z" stroke="#f0c48d" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 11.5L11 13.5L15 9" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div>
+          <h4 data-cms="why2_title">Best Price Guidance</h4>
+          <p data-cms="why2_text">We help you get the best value for your investment.</p>
+        </div>
+      </div>
+      <div class="why-card">
+        <span class="why-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="8" r="3.2" stroke="#f0c48d" stroke-width="1.7"/><path d="M5 20C5 16.5 8 14 12 14C16 14 19 16.5 19 20" stroke="#f0c48d" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <div>
+          <h4 data-cms="why3_title">Friendly Support</h4>
+          <p data-cms="why3_text">Our team is always ready to guide you every step of the way.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="site-footer" id="footer">
+    <div class="footer-brand">
+      <span class="brand-icon" aria-hidden="true">
+        <img src="images/logo-icon.png?v=2" alt="Shortlet Magnificent" style="width:100%;height:100%;object-fit:contain;">
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">SHORTLET</span>
+        <span class="brand-name">MAGNIFICENT</span>
+      </span>
+    </div>
+    <p class="footer-tagline" data-cms="footer_tagline">Verified 5-star shortlet apartments across Lagos, trusted by 3,000+ guests.</p>
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-contact">
+      <a href="tel:+2348142230897">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none"><path d="M4 5C4 4 5 3.5 6 3.5H8.5L10 8L8 9.5C8.8 11.5 10.5 13.2 12.5 14L14 12L18.5 13.5V16C18.5 17 18 18 17 18C10 18.5 4 12.5 4 5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        +234 814 223 0897
+      </a>
+      <a href="mailto:Magnificenthomes4u@gmail.com">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 6L12 12.5L20.5 6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        Magnificenthomes4u@gmail.com
+      </a>
+      <a href="https://wa.me/2348142230897" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none"><path d="M20 12C20 16.4 16.4 20 12 20C10.6 20 9.3 19.6 8.2 19L4 20L5.1 15.9C4.4 14.7 4 13.4 4 12C4 7.6 7.6 4 12 4C16.4 4 20 7.6 20 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        WhatsApp Us
+      </a>
+    </div>
+
+    <div class="footer-social">
+      <a href="https://www.instagram.com/shortlet.magnificent" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor"/></svg>
+      </a>
+    </div>
+
+    <div class="footer-legal">
+      <a href="about.html">About Us</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy" data-cms="footer_copy" data-cms-lines>© 2026 Shortlet Magnificent.<br>Premium shortlet apartments across Lagos.</p>
+    </div>
+  </footer>
+
+</main>
+
+<!-- ============ BOTTOM NAV ============ -->
+<nav class="bottom-nav" aria-label="Primary">
+  <a href="index.html" class="bottom-item active">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M4 11L12 4L20 11V19C20 19.5523 19.5523 20 19 20H15V14H9V20H5C4.44772 20 4 19.5523 4 19V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    <span>Home</span>
+  </a>
+  <a href="properties.html" class="bottom-item">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><rect x="5" y="3" width="14" height="18" rx="1" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><rect x="8" y="7" width="2.3" height="2.3" fill="currentColor"/><rect x="13.7" y="7" width="2.3" height="2.3" fill="currentColor"/><rect x="8" y="11.3" width="2.3" height="2.3" fill="currentColor"/><rect x="13.7" y="11.3" width="2.3" height="2.3" fill="currentColor"/><rect x="9.7" y="16" width="4.6" height="5" stroke="currentColor" stroke-width="1.6"/></svg>
+    <span>Stays</span>
+  </a>
+  <a href="gallery.html" class="bottom-item">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="10" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M4 16L9 12L13 15L16 12.5L20 16" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    <span>Gallery</span>
+  </a>
+  <a href="profile.html" class="bottom-item">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20C4.5 16.4 7.8 14 12 14C16.2 14 19.5 16.4 19.5 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <span>Profile</span>
+  </a>
+</nav>
+
+<!-- ============ BOOKING MODAL ============ -->
+<div class="modal-overlay" id="modalOverlay"></div>
+<div class="modal booking-modal" id="inspectionModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-head">
+    <h3 id="modalTitle">Request to Book</h3>
+    <button class="modal-close" id="modalClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="#172033" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <p class="modal-property" id="modalPropertyName"></p>
+  <p class="modal-price" id="modalPrice"></p>
+  <form id="inspectionForm">
+    <div class="date-row">
+      <label>Check-in
+        <input type="date" name="checkin" required>
+      </label>
+      <label>Check-out
+        <input type="date" name="checkout" required>
+      </label>
+    </div>
+
+    <label class="guest-counter-label">Guests
+      <div class="guest-counter">
+        <button type="button" class="counter-btn" id="guestMinus" aria-label="Fewer guests">−</button>
+        <span id="guestCount">1</span>
+        <button type="button" class="counter-btn" id="guestPlus" aria-label="More guests">+</button>
+      </div>
+    </label>
+
+    <label>Full Name
+      <input type="text" name="name" required placeholder="e.g. Chioma Eze">
+    </label>
+    <label>Phone Number
+      <input type="tel" name="phone" required placeholder="e.g. 080 000 00000">
+    </label>
+    <label>Email (for payment receipt)
+      <input type="email" name="email" placeholder="you@example.com">
+    </label>
+    <label>Promo Code (optional)
+      <input type="text" name="promo" placeholder="Promo code (optional)">
+    </label>
+
+    <div class="payment-methods">
+      <p class="payment-label">Payment Method</p>
+      <div class="payment-options two-up">
+        <button type="button" class="payment-btn active" data-method="Paystack">⚡ Pay Online (Paystack)</button>
+        <button type="button" class="payment-btn" data-method="Transfer">🏦 Transfer via WhatsApp</button>
+      </div>
+      <p class="payment-hint" id="paymentHint">Pay securely by card, transfer or USSD through Paystack.</p>
+    </div>
+
+    <div class="price-summary" id="priceSummary"></div>
+
+    <button type="submit" class="btn btn-gold btn-full" id="modalSubmitBtn">Pay with Paystack</button>
+  </form>
+  <div class="modal-success" id="modalSuccess">
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none"><circle cx="12" cy="12" r="10" stroke="#2E9E5B" stroke-width="1.8"/><path d="M8 12.5L10.5 15L16 9" stroke="#2E9E5B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <p>Booking request sent! We'll confirm availability and send payment details on WhatsApp shortly.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="firebase-init.js"></script>
+<script src="data-service.js"></script>
+<script src="property-image-loader.js"></script>
+<script src="script.js"></script>
+<script src="desktop-enhance.js"></script>
+</body>
+</html>

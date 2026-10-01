@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Apartment Details | Shortlet Magnificent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="desktop.css">
+<link rel="stylesheet" href="property.css">
+<script src="error-handler.js"></script>
+<script src="skeleton-loader.js"></script>
+<script src="load-guard.js"></script>
+</head>
+<body>
+
+<header class="site-header desktop-only" id="siteHeader">
+  <a href="index.html" class="brand" aria-label="Shortlet Magnificent — Home">
+    <span class="brand-icon" aria-hidden="true">
+      <img src="images/logo-icon.png?v=2" alt="Shortlet Magnificent" style="width:100%;height:100%;object-fit:contain;">
+    </span>
+    <span class="brand-text">
+      <span class="brand-name">SHORTLET</span>
+      <span class="brand-name">MAGNIFICENT</span>
+    </span>
+  </a>
+
+
+  <nav class="desktop-nav" aria-label="Desktop primary navigation">
+    <a href="index.html">Home</a>
+    <a href="properties.html" aria-current="page">Properties</a>
+    <a href="index.html#locations">Locations</a>
+    <a href="about.html">About</a>
+    <a href="help.html">Contact</a>
+  </nav>
+  <div class="desktop-header-icons">
+    <a href="properties.html" class="dh-icon" aria-label="Search stays"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="M16 16L20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
+    <a href="profile.html" class="dh-icon" aria-label="My account"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M5 20C5 16.4 8 14 12 14C16 14 19 16.4 19 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>
+  </div>
+  <a class="desktop-header-action" href="properties.html">Book a Stay</a>
+</header>
+
+<!-- ============ TOP BAR ============ -->
+<header class="detail-topbar">
+  <button class="back-btn" onclick="history.length > 1 ? history.back() : location.href='index.html'" aria-label="Go back">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M15 6L9 12L15 18" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <span class="detail-topbar-title">Apartment Details</span>
+  <button class="topbar-fav" id="topbarFav" aria-label="Save to favourites">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none"><path d="M12 21C12 21 4 15.6 4 9.8C4 6.6 6.5 4.2 9.4 4.2C11 4.2 12 5 12 5C12 5 13 4.2 14.6 4.2C17.5 4.2 20 6.6 20 9.8C20 15.6 12 21 12 21Z" stroke="#FFFFFF" stroke-width="1.8" stroke-linejoin="round"/></svg>
+  </button>
+</header>
+
+<a href="properties.html" class="desktop-back desk-only">← Back to properties</a>
+
+<main id="propertyDetailRoot">
+  <!-- Populated by property.js -->
+  <div class="detail-loading">Loading property…</div>
+</main>
+
+<!-- ============ BOTTOM NAV ============ -->
+<nav class="bottom-nav" aria-label="Primary">
+  <a href="index.html" class="bottom-item">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M4 11L12 4L20 11V19C20 19.5523 19.5523 20 19 20H15V14H9V20H5C4.44772 20 4 19.5523 4 19V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    <span>Home</span>
+  </a>
+  <a href="index.html#properties" class="bottom-item active">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M4 21V9L12 3L20 9V21H14V14H10V21H4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    <span>Stays</span>
+  </a>
+  <a href="gallery.html" class="bottom-item" id="galleryNav">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="10" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M4 16L9 12L13 15L16 12.5L20 16" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    <span>Gallery</span>
+  </a>
+  <a href="profile.html" class="bottom-item" id="profileNav">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20C4.5 16.4 7.8 14 12 14C16.2 14 19.5 16.4 19.5 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <span>Profile</span>
+  </a>
+</nav>
+
+<!-- ============ STICKY ACTION BAR (mobile) ============ -->
+<div class="sticky-actions" id="stickyActions"></div>
+
+<!-- ============ BOOKING MODAL (shared) ============ -->
+<div class="modal-overlay" id="modalOverlay"></div>
+<div class="modal booking-modal" id="inspectionModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-head">
+    <h3 id="modalTitle">Request to Book</h3>
+    <button class="modal-close" id="modalClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="#172033" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <p class="modal-property" id="modalPropertyName"></p>
+  <p class="modal-price" id="modalPrice"></p>
+  <form id="inspectionForm">
+    <div class="date-row">
+      <label>Check-in
+        <input type="date" name="checkin" required>
+      </label>
+      <label>Check-out
+        <input type="date" name="checkout" required>
+      </label>
+    </div>
+
+    <label class="guest-counter-label">Guests
+      <div class="guest-counter">
+        <button type="button" class="counter-btn" id="guestMinus" aria-label="Fewer guests">−</button>
+        <span id="guestCount">1</span>
+        <button type="button" class="counter-btn" id="guestPlus" aria-label="More guests">+</button>
+      </div>
+    </label>
+
+    <label>Full Name
+      <input type="text" name="name" required placeholder="e.g. Chioma Eze">
+    </label>
+    <label>Phone Number
+      <input type="tel" name="phone" required placeholder="e.g. 080 000 00000">
+    </label>
+    <label>Email (for payment receipt)
+      <input type="email" name="email" placeholder="you@example.com">
+    </label>
+    <label>Promo Code (optional)
+      <input type="text" name="promo" placeholder="Promo code (optional)">
+    </label>
+
+    <div class="payment-methods">
+      <p class="payment-label">Payment Method</p>
+      <div class="payment-options two-up">
+        <button type="button" class="payment-btn active" data-method="Paystack">⚡ Pay Online (Paystack)</button>
+        <button type="button" class="payment-btn" data-method="Transfer">🏦 Transfer via WhatsApp</button>
+      </div>
+      <p class="payment-hint" id="paymentHint">Pay securely by card, transfer or USSD through Paystack.</p>
+    </div>
+
+    <div class="price-summary" id="priceSummary"></div>
+
+    <button type="submit" class="btn btn-gold btn-full" id="modalSubmitBtn">Pay with Paystack</button>
+  </form>
+  <div class="modal-success" id="modalSuccess">
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none"><circle cx="12" cy="12" r="10" stroke="#2E9E5B" stroke-width="1.8"/><path d="M8 12.5L10.5 15L16 9" stroke="#2E9E5B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <p>Booking request sent! We'll confirm availability and send payment details on WhatsApp shortly.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="firebase-init.js"></script>
+<script src="data-service.js"></script>
+<script src="script.js"></script>
+<script src="property.js"></script>
+<script src="desktop-enhance.js"></script>
+</body>
+</html>

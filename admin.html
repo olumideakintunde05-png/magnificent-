@@ -1,0 +1,3359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Admin | Shortlet Magnificent</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="desktop.css">
+<style>
+/* ==========================================================
+   SHORTLET MAGNIFICENT — ADMIN PANEL
+   Reuses the design tokens defined in style.css (colors, fonts,
+   radii, shadows). This file adds the admin-only layout:
+   a fixed sidebar on desktop, a slide-out drawer on mobile,
+   and the table/card/form patterns used across admin pages.
+========================================================== */
+
+body.admin-body{
+  padding-bottom:0;
+  background:var(--bg-light);
+  min-height:100vh;
+}
+/* script.js is included on admin pages only for its PROPERTIES/REVIEWS
+   data — its homepage-only widgets (WhatsApp float, booking toast) still
+   run on DOMContentLoaded, so hide them here rather than risk touching
+   script.js's shared logic. */
+body.admin-body #waFloat,
+body.admin-body #bookedToast{ display:none !important; }
+
+/* ---------- Shell layout ---------- */
+.admin-shell{
+  display:flex;
+  min-height:100vh;
+}
+
+.admin-sidebar{
+  width:240px;
+  flex-shrink:0;
+  background:var(--navy-deep);
+  color:var(--white);
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  top:0; left:0; bottom:0;
+  z-index:40;
+  transform:translateX(-100%);
+  transition:transform 0.25s ease;
+}
+.admin-sidebar.open{ transform:translateX(0); }
+@media (min-width:960px){
+  .admin-sidebar{ transform:translateX(0); position:sticky; }
+}
+
+.admin-sidebar-brand{
+  display:flex; align-items:center; gap:10px;
+  padding:20px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.admin-sidebar-brand .brand-icon{ width:30px; height:30px; }
+.admin-sidebar-brand .brand-text{ display:flex; flex-direction:column; line-height:1.08; }
+.admin-sidebar-brand .brand-name{ font-family:var(--font-head); font-weight:600; font-size:12.5px; color:var(--white); letter-spacing:0.4px; text-transform:uppercase; }
+.admin-sidebar-eyebrow{
+  font-family:var(--font-body); font-size:10px; font-weight:700; letter-spacing:1.5px;
+  color:var(--gold); text-transform:uppercase; padding:14px 18px 4px;
+}
+
+.admin-nav{ flex:1; overflow-y:auto; padding:6px 10px 16px; }
+.admin-nav-link{
+  display:flex; align-items:center; gap:12px;
+  padding:11px 12px; margin:2px 0;
+  border-radius:var(--radius-sm);
+  color:rgba(255,255,255,0.72);
+  font-family:var(--font-body); font-size:14px; font-weight:600;
+}
+.admin-nav-link svg{ width:18px; height:18px; flex-shrink:0; }
+.admin-nav-link:hover{ background:rgba(255,255,255,0.06); color:var(--white); }
+.admin-nav-link.active{ background:var(--gold); color:var(--navy-deep); }
+
+.admin-sidebar-foot{
+  padding:14px 18px 18px;
+  border-top:1px solid rgba(255,255,255,0.08);
+}
+.admin-signed-in{ font-size:12px; color:rgba(255,255,255,0.55); margin-bottom:8px; word-break:break-all; }
+.admin-logout{
+  display:flex; align-items:center; gap:8px;
+  background:none; border:1px solid rgba(255,255,255,0.18);
+  color:var(--white); font-size:13px; font-weight:700;
+  padding:9px 12px; border-radius:var(--radius-sm); width:100%;
+}
+.admin-logout:hover{ border-color:var(--gold); color:var(--gold); }
+
+.admin-scrim{
+  position:fixed; inset:0; background:rgba(10,17,32,0.5);
+  z-index:35; opacity:0; pointer-events:none; transition:opacity 0.2s ease;
+}
+.admin-scrim.show{ opacity:1; pointer-events:auto; }
+@media (min-width:960px){ .admin-scrim{ display:none; } }
+
+/* ---------- Main column ---------- */
+.admin-main{ flex:1; min-width:0; }
+@media (min-width:960px){ .admin-main{ margin-left:0; } }
+
+.admin-topbar{
+  display:flex; align-items:center; gap:14px;
+  padding:16px 20px; background:var(--white);
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:20;
+}
+.admin-menu-btn{
+  background:none; border:none; width:34px; height:34px;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--navy-deep);
+}
+@media (min-width:960px){ .admin-menu-btn{ display:none; } }
+.admin-topbar h1{ font-size:18px; font-weight:700; }
+.admin-topbar-actions{ margin-left:auto; display:flex; gap:10px; }
+
+.admin-content{ padding:20px; max-width:1100px; }
+
+/* ---------- Stat cards ---------- */
+.admin-stats{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:14px; margin-bottom:24px;
+}
+.admin-stat-card{
+  background:var(--white); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:16px; box-shadow:var(--shadow-card);
+}
+.admin-stat-num{ font-family:var(--font-head); font-size:26px; font-weight:700; color:var(--navy-deep); }
+.admin-stat-label{ font-size:12.5px; color:var(--text-muted); margin-top:2px; }
+
+/* ---------- Cards / sections ---------- */
+.admin-card{
+  background:var(--white); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:18px; margin-bottom:20px; box-shadow:var(--shadow-card);
+}
+.admin-card h2{ font-size:16px; font-weight:700; margin-bottom:14px; }
+
+/* ---------- Buttons ---------- */
+.admin-btn{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--font-body); font-size:13.5px; font-weight:700;
+  padding:9px 16px; border-radius:var(--radius-sm); border:1px solid transparent;
+}
+.admin-btn-gold{ background:linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%); color:var(--navy-deep); }
+.admin-btn-outline{ background:none; border-color:var(--border); color:var(--text); }
+.admin-btn-outline:hover{ border-color:var(--navy-deep); }
+.admin-btn-danger{ background:none; border-color:var(--burgundy); color:var(--burgundy); }
+.admin-btn-danger:hover{ background:var(--burgundy); color:var(--white); }
+.admin-btn-sm{ padding:6px 10px; font-size:12.5px; }
+
+/* ---------- Tables ---------- */
+.admin-table-wrap{ overflow-x:auto; }
+.admin-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+.admin-table th{
+  text-align:left; font-family:var(--font-body); font-size:11.5px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);
+  padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.admin-table td{ padding:12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.admin-table tr:last-child td{ border-bottom:none; }
+.admin-row-thumb{ width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+.admin-row-title{ display:flex; align-items:center; gap:10px; font-weight:700; }
+.admin-row-actions{ display:flex; gap:8px; white-space:nowrap; }
+
+.admin-badge{
+  display:inline-block; padding:3px 10px; border-radius:999px;
+  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;
+}
+.admin-badge-available{ background:rgba(46,158,91,0.12); color:var(--success); }
+.admin-badge-booked{ background:rgba(217,168,104,0.18); color:var(--gold-dark); }
+.admin-badge-unavailable{ background:rgba(128,20,36,0.1); color:var(--burgundy); }
+.admin-badge-new{ background:rgba(15,23,43,0.08); color:var(--navy-deep); }
+.admin-badge-contacted{ background:rgba(217,168,104,0.18); color:var(--gold-dark); }
+.admin-badge-confirmed{ background:rgba(46,158,91,0.12); color:var(--success); }
+.admin-badge-cancelled{ background:rgba(128,20,36,0.1); color:var(--burgundy); }
+
+.admin-empty{ padding:36px 20px; text-align:center; color:var(--text-muted); font-size:14px; }
+
+/* ---------- Forms ---------- */
+.admin-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.admin-form-grid.full{ grid-template-columns:1fr; }
+@media (max-width:640px){ .admin-form-grid{ grid-template-columns:1fr; } }
+.admin-field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.admin-field label{ font-size:12.5px; font-weight:700; color:var(--text); }
+.admin-field input, .admin-field select, .admin-field textarea{
+  font-family:var(--font-body); font-size:14px; padding:10px 12px;
+  border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--white); color:var(--text);
+}
+.admin-field textarea{ resize:none; min-height:80px; }
+.admin-field-hint{ font-size:11.5px; color:var(--text-muted); }
+.admin-tag-list{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.admin-tag{
+  display:flex; align-items:center; gap:6px; background:var(--bg-light); border:1px solid var(--border);
+  border-radius:999px; padding:4px 6px 4px 10px; font-size:12.5px;
+}
+.admin-tag button{ background:none; border:none; color:var(--text-muted); width:16px; height:16px; }
+.admin-image-list{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+.admin-image-thumb{ position:relative; width:76px; height:76px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+.admin-image-thumb img{ width:100%; height:100%; object-fit:cover; }
+.admin-image-thumb button{
+  position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%;
+  background:rgba(15,23,43,0.75); color:var(--white); border:none; font-size:12px; line-height:1;
+}
+
+/* ---------- Modal (used for property add/edit) ---------- */
+.admin-modal-scrim{
+  position:fixed; inset:0; background:rgba(10,17,32,0.55); z-index:60;
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity 0.2s ease;
+}
+.admin-modal-scrim.show{ opacity:1; pointer-events:auto; }
+.admin-modal{
+  background:var(--white); border-radius:20px 20px 0 0; width:100%; max-width:640px;
+  max-height:92vh; overflow-y:auto; padding:22px 20px 28px;
+  transform:translateY(24px); transition:transform 0.25s ease;
+}
+.admin-modal-scrim.show .admin-modal{ transform:translateY(0); }
+@media (min-width:720px){
+  .admin-modal-scrim{ align-items:center; }
+  .admin-modal{ border-radius:var(--radius-lg); }
+}
+.admin-modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.admin-modal-head h2{ font-size:18px; font-weight:700; }
+.admin-modal-close{ background:none; border:none; width:30px; height:30px; color:var(--text-muted); }
+
+/* ---------- Toast ---------- */
+.admin-toast{
+  position:fixed; left:50%; bottom:24px; transform:translate(-50%,12px);
+  background:var(--navy-deep); color:var(--white); padding:12px 20px; border-radius:999px;
+  font-size:13.5px; font-weight:600; box-shadow:var(--shadow-elevated);
+  opacity:0; pointer-events:none; transition:all 0.25s ease; z-index:80;
+}
+.admin-toast.show{ opacity:1; transform:translate(-50%,0); }
+
+/* ---------- Gate / login-required screen ---------- */
+.admin-gate{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:var(--navy-deep); padding:24px;
+}
+.admin-gate-card{ text-align:center; color:var(--white); max-width:320px; }
+.admin-gate-card .brand-icon{ width:44px; height:44px; margin:0 auto 14px; }
+.admin-gate-card h1{ font-size:20px; color:var(--white); margin-bottom:8px; }
+.admin-gate-card p{ font-size:14px; color:rgba(255,255,255,0.7); margin-bottom:20px; line-height:1.5; }
+
+/* ---------- Avoid a flash of admin UI before the access check ---------- */
+body.admin-body:not(.admin-ready) .admin-shell{ display:none; }
+
+/* ==========================================================
+   ADMIN LOGIN PAGE
+========================================================== */
+.admin-login{
+  position:fixed; inset:0; z-index:200; overflow:auto;
+  background:var(--navy-deep);
+  display:none; align-items:center; justify-content:center; padding:24px;
+}
+body.admin-login-on .admin-login{ display:flex; }
+.admin-login-card{
+  width:100%; max-width:380px; background:var(--white); border-radius:var(--radius-lg);
+  padding:32px 26px 24px; box-shadow:var(--shadow-elevated); text-align:center;
+}
+.admin-login-logo{ width:52px; height:52px; object-fit:contain; margin:0 auto 10px; display:block; }
+.admin-login-eyebrow{
+  font-family:var(--font-head); font-size:11px; font-weight:700; letter-spacing:1.6px;
+  color:var(--gold-dark); margin-bottom:10px;
+}
+.admin-login-card h1{ font-size:22px; margin-bottom:6px; color:var(--navy-deep); }
+.admin-login-sub{ font-size:13.5px; color:var(--text-muted); line-height:1.5; margin-bottom:20px; }
+.admin-login-card form{ text-align:left; }
+.admin-login-field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.admin-login-field label{ font-size:12.5px; font-weight:700; color:var(--text); }
+.admin-login-field input{
+  font-family:var(--font-body); font-size:15px; padding:12px 13px; width:100%;
+  border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--white); color:var(--text);
+}
+.admin-login-field input:focus{ outline:none; border-color:var(--gold-dark); box-shadow:0 0 0 3px rgba(217,168,104,0.25); }
+.admin-login-pw{ position:relative; }
+.admin-login-pw input{ padding-right:64px; }
+.admin-login-pw button{
+  position:absolute; top:50%; right:8px; transform:translateY(-50%);
+  background:none; border:none; font-size:12.5px; font-weight:700; color:var(--text-muted); padding:6px 8px;
+}
+.admin-login-submit{ width:100%; justify-content:center; padding:13px 16px; font-size:15px; margin-top:4px; }
+.admin-login-submit:disabled{ opacity:0.7; }
+.admin-login-link{
+  display:block; margin:14px auto 0; background:none; border:none;
+  font-size:13px; font-weight:700; color:var(--navy-deep); text-decoration:underline;
+}
+.admin-login-back{ display:inline-block; margin-top:20px; font-size:13px; color:var(--text-muted); }
+.admin-login-msg{
+  display:none; font-size:13px; line-height:1.45; text-align:left;
+  padding:10px 12px; border-radius:var(--radius-sm); margin-bottom:14px;
+}
+.admin-login-msg.show{ display:block; }
+.admin-login-msg.error{ background:rgba(128,20,36,0.08); color:var(--burgundy); }
+.admin-login-msg.note{ background:rgba(46,158,91,0.1); color:var(--success); }
+.admin-login-noaccess{ text-align:center; }
+.admin-login-noaccess p{ font-size:14px; line-height:1.5; margin-bottom:14px; color:var(--text); }
+.admin-login-noaccess[hidden], .admin-login-card form[hidden]{ display:none; }
+
+/* ==========================================================
+   GALLERY MANAGER
+========================================================== */
+.admin-gallery-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:14px;
+}
+.admin-gallery-item{
+  border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; background:var(--white);
+  display:flex; flex-direction:column;
+}
+.admin-gallery-thumb{ position:relative; aspect-ratio:1/1; background:var(--bg-light); }
+.admin-gallery-thumb img, .admin-gallery-thumb video{ width:100%; height:100%; object-fit:cover; display:block; }
+.admin-gallery-type{
+  position:absolute; top:6px; left:6px; background:rgba(15,23,43,0.75); color:var(--white);
+  font-size:10.5px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; padding:3px 8px; border-radius:999px;
+}
+.admin-gallery-meta{ padding:10px; display:flex; flex-direction:column; gap:8px; flex:1; }
+.admin-gallery-caption{ font-size:12.5px; font-weight:700; line-height:1.3; word-break:break-word; }
+.admin-gallery-caption.empty{ color:var(--text-muted); font-weight:400; }
+.admin-gallery-item .admin-row-actions{ margin-top:auto; }
+.admin-dropzone{
+  display:block; border:1.5px dashed var(--border); border-radius:var(--radius-md);
+  padding:20px 14px; text-align:center; font-size:13.5px; color:var(--text-muted); cursor:pointer;
+}
+.admin-dropzone:hover{ border-color:var(--gold-dark); }
+.admin-dropzone input{ display:none; }
+.admin-upload-status{ font-size:13px; color:var(--text-muted); margin-top:10px; min-height:18px; }
+
+/* ==========================================================
+   USERS + SETTINGS
+========================================================== */
+.admin-toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.admin-search{
+  flex:1; min-width:180px; font-family:var(--font-body); font-size:14px; padding:10px 12px;
+  border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--white); color:var(--text);
+}
+.admin-inline-badge{
+  display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; font-size:10.5px;
+  font-weight:700; letter-spacing:0.3px; text-transform:uppercase;
+  background:rgba(217,168,104,0.18); color:var(--gold-dark);
+}
+.admin-list-row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:11px 0; border-bottom:1px solid var(--border); font-size:14px; word-break:break-all;
+}
+.admin-list-row:last-child{ border-bottom:none; }
+.admin-add-row{ display:flex; gap:10px; margin-top:14px; }
+.admin-add-row input{
+  flex:1; min-width:0; font-family:var(--font-body); font-size:14px; padding:10px 12px;
+  border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--white); color:var(--text);
+}
+.admin-card p.admin-help{ font-size:13px; color:var(--text-muted); line-height:1.55; margin-bottom:14px; }
+
+/* ---------- Single-page admin sections ---------- */
+.admin-section[hidden]{ display:none; }
+.admin-section-actions{ display:flex; justify-content:flex-end; gap:10px; margin-bottom:14px; }
+
+/* ---------- Form rows that must not overflow on phones ---------- */
+.admin-field{ min-width:0; }
+.admin-field input, .admin-field select, .admin-field textarea{ min-width:0; max-width:100%; box-sizing:border-box; }
+.admin-form-grid.three-nums, .admin-form-grid.three-contact{ grid-template-columns:1fr 1fr 1fr; }
+@media (max-width:640px){ .admin-form-grid.three-contact{ grid-template-columns:1fr; } }
+
+/* ---------- Content editor ---------- */
+.faq-edit{ border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:12px; background:var(--white); }
+.faq-edit-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; font-size:13px; }
+.faq-edit-head .admin-row-actions{ display:flex; gap:6px; }
+.faq-edit-head button[disabled]{ opacity:0.4; }
+.content-group{ font-size:13px; letter-spacing:0.8px; text-transform:uppercase; color:var(--text-muted); margin:18px 0 10px; }
+.content-preview{ border:1px dashed var(--border); border-radius:var(--radius-md); padding:14px; background:var(--bg-light); }
+#panelFaq[hidden], #panelPage[hidden], #panelSite[hidden]{ display:none; }
+
+/* ---------- Promo cards ---------- */
+.promo-card{ border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; margin-bottom:10px; background:var(--white); }
+.promo-card-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:15px; letter-spacing:.5px; }
+.promo-card p{ margin:6px 0 10px; font-size:13px; line-height:1.5; color:var(--text-muted); }
+
+/* No resize grip (the two little diagonal lines) on any text box */
+textarea{ resize:none !important; }
+
+
+/* Caption / Delete buttons stay inside the small gallery tiles */
+.admin-gallery-meta .admin-row-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+.admin-gallery-meta .admin-btn{ flex:1 1 0; min-width:0; padding:6px 6px; font-size:12px; justify-content:center; text-align:center; }
+
+/* Home page + notifications editors */
+.hp-row{ display:flex; gap:12px; align-items:flex-start; }
+.hp-thumb{ width:72px; height:72px; flex:0 0 72px; border-radius:12px; overflow:hidden; background:var(--navy-deep); display:flex; align-items:center; justify-content:center; }
+.hp-thumb img{ width:100%; height:100%; object-fit:cover; }
+.hp-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+.hp-fields .admin-field{ margin-bottom:0; }
+.hp-icon-preview{ width:44px; height:44px; flex:0 0 44px; border-radius:12px; background:var(--navy-deep); display:flex; align-items:center; justify-content:center; }
+.hp-inline{ display:flex; gap:10px; align-items:center; }
+.hp-inline select{ flex:1; min-width:0; }
+.hp-status{ font-size:12.5px; color:var(--text-muted); min-height:16px; }
+.notify-row{ padding:12px 0; border-bottom:1px solid var(--border); }
+.notify-row:last-child{ border-bottom:none; }
+.notify-row-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.notify-row p{ font-size:13px; color:var(--text-muted); line-height:1.5; margin:4px 0 0; white-space:pre-line; }
+</style>
+
+<script src="error-handler.js"></script>
+<script src="skeleton-loader.js"></script>
+</head>
+<body class="admin-body">
+
+<!-- ============ SIGN-IN SCREEN ============ -->
+<main class="admin-login" id="adminLoginView">
+  <div class="admin-login-card">
+    <img class="admin-login-logo" src="images/logo-icon.png?v=2" alt="Shortlet Magnificent">
+    <p class="admin-login-eyebrow">SHORTLET MAGNIFICENT</p>
+    <h1>Admin sign in</h1>
+    <p class="admin-login-sub">For staff only. Guests can log in from the main website.</p>
+
+    <div class="admin-login-msg error" id="adminLoginError" role="alert"></div>
+    <div class="admin-login-msg note" id="adminLoginNote"></div>
+
+    <div id="adminLoginNoAccess" class="admin-login-noaccess" hidden>
+      <p id="adminLoginNoAccessText"></p>
+      <button type="button" class="admin-btn admin-btn-outline" id="adminLoginSwitch">Sign out and use another account</button>
+    </div>
+
+    <form id="adminLoginForm" novalidate>
+      <div class="admin-login-field">
+        <label for="adminEmail">Email</label>
+        <input type="email" id="adminEmail" autocomplete="username" placeholder="admin@example.com" required>
+      </div>
+      <div class="admin-login-field">
+        <label for="adminPassword">Password</label>
+        <div class="admin-login-pw">
+          <input type="password" id="adminPassword" autocomplete="current-password" placeholder="Your password" required>
+          <button type="button" id="adminTogglePw" aria-label="Show password">Show</button>
+        </div>
+      </div>
+      <button type="submit" class="admin-btn admin-btn-gold admin-login-submit" id="adminLoginSubmit">Sign in</button>
+    </form>
+
+    <a class="admin-login-back" href="index.html">&larr; Back to website</a>
+  </div>
+</main>
+
+
+<div class="admin-shell">
+  <aside class="admin-sidebar" id="adminSidebar"></aside>
+  <div class="admin-scrim" id="adminScrim"></div>
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <button class="admin-menu-btn" id="adminMenuBtn" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <h1 id="adminTitle">Dashboard</h1>
+    </div>
+    <div class="admin-content">
+    <section class="admin-section" id="section-dashboard" data-title="Dashboard">
+      <div class="admin-stats" id="adminStats"></div>
+      <div class="admin-card">
+        <h2>Recent booking enquiries <a href="#bookings" style="float:right;font-size:12.5px;font-weight:700;color:var(--gold-dark);">View all &rarr;</a></h2>
+        <div class="admin-table-wrap" id="adminRecentBookings"></div>
+      </div>
+      <div class="admin-card" style="border-color:var(--gold-dark);">
+        <h2>First time here?</h2>
+        <p style="font-size:13.5px;color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
+          Properties and reviews are now stored in Firestore. If this is a brand new Firebase project
+          with empty <code>properties</code>/<code>reviews</code> collections, click below once to copy
+          the starter listings and reviews from the site's original code into Firestore, so there's
+          something to edit and the public site has data to show.
+        </p>
+        <button class="admin-btn admin-btn-outline" id="seedBtn">Import starter data to Firestore</button>
+      </div>
+    </section>
+
+    <section class="admin-section" id="section-properties" data-title="Properties" hidden>
+      <div class="admin-section-actions"><button class="admin-btn admin-btn-gold" id="addPropertyBtn">+ Add Property</button></div>
+      <div class="admin-card">
+        <h2>All properties</h2>
+        <div class="admin-table-wrap" id="propertiesTableWrap"></div>
+      </div>
+
+      <!-- ============ ADD/EDIT MODAL ============ -->
+      <div class="admin-modal-scrim" id="propertyModalScrim">
+        <div class="admin-modal">
+          <div class="admin-modal-head">
+            <h2 id="propertyModalTitle">Add property</h2>
+            <button class="admin-modal-close" id="propertyModalClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <form id="propertyForm">
+            <div class="admin-form-grid">
+              <div class="admin-field"><label>Title</label><input type="text" name="title" placeholder="e.g. Minimalist 2-Bedroom Condo"></div>
+              <div class="admin-field"><label>Type</label><input type="text" name="type" placeholder="e.g. 2-Bedroom"></div>
+            </div>
+            <div class="admin-form-grid">
+              <div class="admin-field"><label>Location</label><input type="text" name="location" placeholder="e.g. Ikate, Lekki"></div>
+              <div class="admin-field"><label>Status</label>
+                <select name="status">
+                  <option>Available</option>
+                  <option>Booked</option>
+                  <option>Unavailable</option>
+                </select>
+              </div>
+            </div>
+            <div class="admin-form-grid">
+              <div class="admin-field"><label>Price per night (₦)</label><input type="number" name="priceValue" placeholder="120000"></div>
+              <div class="admin-field"><label>Period label</label><input type="text" name="period" placeholder="/night"></div>
+            </div>
+            <div class="admin-form-grid three-nums">
+              <div class="admin-field"><label>Bedrooms</label><input type="number" name="bedrooms"></div>
+              <div class="admin-field"><label>Bathrooms</label><input type="number" name="bathrooms"></div>
+              <div class="admin-field"><label>Guests</label><input type="number" name="guests"></div>
+            </div>
+            <div class="admin-form-grid">
+              <div class="admin-field"><label>Furnishing</label><input type="text" name="furnishing" placeholder="Fully Furnished"></div>
+              <div class="admin-field"><label>Minimum stay</label><input type="text" name="minStay" placeholder="2 nights"></div>
+            </div>
+
+            <div class="admin-field">
+              <label>Amenities</label>
+              <div style="display:flex;gap:8px;">
+                <input type="text" id="amenityInput" placeholder="e.g. Swimming Pool & Gym — press Enter to add">
+                <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" id="addAmenityBtn">Add</button>
+              </div>
+              <div class="admin-tag-list" id="amenityTags"></div>
+            </div>
+
+            <div class="admin-field">
+              <label>Unavailable dates</label>
+              <div class="admin-form-grid three-nums">
+                <div class="admin-field" style="margin-bottom:0;"><span class="admin-field-hint">First night</span><input type="date" id="blockFrom"></div>
+                <div class="admin-field" style="margin-bottom:0;"><span class="admin-field-hint">Last night</span><input type="date" id="blockTo"></div>
+                <div class="admin-field" style="margin-bottom:0;"><span class="admin-field-hint">Note (optional)</span><input type="text" id="blockNote" placeholder="e.g. Owner stay"></div>
+              </div>
+              <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" id="addBlockedBtn" style="margin-top:8px;align-self:flex-start;">Block these dates</button>
+              <div id="blockedList" style="margin-top:6px;"></div>
+            </div>
+
+            <div class="admin-field">
+              <label>Photos</label>
+              <label class="admin-dropzone" for="propertyPhotoFiles">
+                <span id="propertyPhotoLabel">Tap to add photos from your phone</span>
+                <input type="file" id="propertyPhotoFiles" accept="image/*" multiple>
+              </label>
+              <div class="admin-upload-status" id="propertyPhotoStatus"></div>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <input type="text" id="imageUrlInput" placeholder="Or paste an image link (https://...)">
+                <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" id="addImageBtn">Add</button>
+              </div>
+              <div class="admin-image-list" id="imageThumbs"></div>
+            </div>
+
+            <div class="admin-field"><label>Description</label><textarea name="description" placeholder="Describe the stay..."></textarea></div>
+            <div class="admin-field"><label>Map link or address</label><input type="text" name="mapLocation" placeholder="Paste a Google Maps link or type the address"></div>
+
+            <div class="admin-field-hint" style="margin:4px 0 10px;">Host contact (shown to guests on this listing)</div>
+            <div class="admin-form-grid three-contact">
+              <div class="admin-field"><label>Phone</label><input type="text" name="hostPhone" placeholder="+2348142230897"></div>
+              <div class="admin-field"><label>WhatsApp</label><input type="text" name="hostWhatsapp" placeholder="2348142230897"></div>
+              <div class="admin-field"><label>Email</label><input type="text" name="hostEmail" placeholder="you@example.com"></div>
+            </div>
+
+            <button type="submit" class="admin-btn admin-btn-gold" style="width:100%;justify-content:center;margin-top:8px;">Save property</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="section-bookings" data-title="Bookings" hidden>
+      <div class="admin-card">
+        <h2>Booking enquiries</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;" id="bookingFilters"></div>
+        <div class="admin-table-wrap" id="bookingsTableWrap"></div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="section-reviews" data-title="Reviews" hidden>
+      <div class="admin-section-actions"><button class="admin-btn admin-btn-gold" id="addReviewBtn">+ Add Review</button></div>
+      <div class="admin-card">
+        <h2>All reviews</h2>
+        <div class="admin-table-wrap" id="reviewsTableWrap"></div>
+      </div>
+
+      <div class="admin-modal-scrim" id="reviewModalScrim">
+        <div class="admin-modal">
+          <div class="admin-modal-head">
+            <h2 id="reviewModalTitle">Add review</h2>
+            <button class="admin-modal-close" id="reviewModalClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <form id="reviewForm">
+            <div class="admin-form-grid">
+              <div class="admin-field"><label>Guest name</label><input type="text" name="name" placeholder="e.g. Chioma Eze"></div>
+              <div class="admin-field"><label>Location</label><input type="text" name="location" placeholder="e.g. Lekki Phase 1"></div>
+            </div>
+            <div class="admin-field">
+              <label>Rating</label>
+              <select name="rating">
+                <option value="5">5 stars</option>
+                <option value="4">4 stars</option>
+                <option value="3">3 stars</option>
+                <option value="2">2 stars</option>
+                <option value="1">1 star</option>
+              </select>
+            </div>
+            <div class="admin-field"><label>Review text</label><textarea name="text" placeholder="What did the guest say?"></textarea></div>
+            <button type="submit" class="admin-btn admin-btn-gold" style="width:100%;justify-content:center;margin-top:8px;">Save review</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="section-gallery" data-title="Gallery" hidden>
+      <div class="admin-section-actions"><button class="admin-btn admin-btn-gold" id="addGalleryBtn" type="button">+ Add to gallery</button></div>
+      <div class="admin-card">
+        <h2>Gallery <span id="galleryCount" style="font-weight:400;color:var(--text-muted);font-size:13px;margin-left:6px;"></span></h2>
+        <p class="admin-help">These are the pictures on the Gallery page and the home page. Add new ones, change a caption, or delete one.</p>
+        <div class="admin-gallery-grid" id="galleryGrid"></div>
+      </div>
+
+      <div class="admin-modal-scrim" id="galleryModalScrim">
+        <div class="admin-modal">
+          <div class="admin-modal-head">
+            <h2>Add to gallery</h2>
+            <button class="admin-modal-close" id="galleryModalClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <form id="galleryForm">
+            <div class="admin-field">
+              <label>Photos</label>
+              <label class="admin-dropzone" for="galleryFiles">
+                <span id="galleryDropLabel">Tap to choose photos</span>
+                <input type="file" id="galleryFiles" accept="image/*" multiple>
+              </label>
+              <span class="admin-field-hint">You can pick several at once. Photos are resized automatically.</span>
+            </div>
+            <div class="admin-field">
+              <label>Or paste a link (photo or video)</label>
+              <input type="url" name="url" placeholder="https://… (.jpg, .png, .mp4, .webm)">
+              <span class="admin-field-hint">Videos must be added by link — a direct .mp4 or .webm URL.</span>
+            </div>
+            <div class="admin-field">
+              <label>Caption (optional)</label>
+              <input type="text" name="caption" placeholder="e.g. Lekki Phase 1 — living room">
+            </div>
+            <button type="submit" class="admin-btn admin-btn-gold" id="gallerySaveBtn" style="width:100%;justify-content:center;margin-top:4px;">Add to gallery</button>
+            <div class="admin-upload-status" id="galleryStatus"></div>
+          </form>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="admin-section" id="section-promos" data-title="Promo codes" hidden>
+      <div class="admin-section-actions"><button class="admin-btn admin-btn-gold" id="addPromoBtn" type="button">+ New promo code</button></div>
+      <div class="admin-card">
+        <h2>Promo codes</h2>
+        <p class="admin-help">Guests type a code into the booking form and the discount is taken off the nightly total before the service fee.</p>
+        <div class="admin-table-wrap" id="promosTableWrap"></div>
+      </div>
+
+      <div class="admin-modal-scrim" id="promoModalScrim">
+        <div class="admin-modal">
+          <div class="admin-modal-head">
+            <h2 id="promoModalTitle">New promo code</h2>
+            <button class="admin-modal-close" id="promoModalClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <form id="promoForm" autocomplete="off">
+            <div class="admin-field"><label>Code</label><input type="text" name="code" placeholder="e.g. WELCOME10" style="text-transform:uppercase;"></div>
+            <div class="admin-form-grid">
+              <div class="admin-field"><label>Type</label>
+                <select name="type"><option value="percent">Percent off</option><option value="fixed">Fixed amount off</option></select>
+              </div>
+              <div class="admin-field"><label id="promoValueLabel">Percent off (%)</label><input type="number" name="value" min="1" step="1"></div>
+            </div>
+            <div class="admin-form-grid">
+              <div class="admin-field"><label>Minimum nights (optional)</label><input type="number" name="minNights" min="0" step="1" placeholder="0"></div>
+              <div class="admin-field"><label>Last day it works (optional)</label><input type="date" name="expiresAt"></div>
+            </div>
+            <div class="admin-field"><label>Maximum uses (optional)</label><input type="number" name="maxUses" min="0" step="1" placeholder="Leave empty for unlimited"></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:16px;"><input type="checkbox" name="active" checked> Code is active</label>
+            <button type="submit" class="admin-btn admin-btn-gold" style="width:100%;justify-content:center;">Save promo code</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="section-homepage" data-title="Home page" hidden>
+      <div class="admin-card">
+        <h2>Home page sections</h2>
+        <p class="admin-help">Change what visitors see on the home page: <strong>Popular Locations</strong>, <strong>Browse by Type</strong>, <strong>Why Choose Us</strong>, <strong>Amenities</strong> and the <strong>Trust badges &amp; numbers</strong> at the top.</p>
+        <div class="admin-toolbar" id="homeTabs" style="margin-bottom:0;">
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-gold" data-tab="hero">Hero photos</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="locations">Locations</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="styles">Browse by type</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="why">Why choose us</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="amenities">Amenities</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="trust">Trust &amp; numbers</button>
+        </div>
+      </div>
+
+      <div class="admin-card" id="panelHpHero" hidden>
+        <h2>Hero photos</h2>
+        <p class="admin-help">The big photos at the very top of the home page. They fade from one to the next in the order below. Use wide/landscape photos, up to 8.</p>
+        <div id="hpHeroBox"></div>
+        <div class="admin-toolbar" style="margin:14px 0 0;">
+          <button type="button" class="admin-btn admin-btn-outline" id="hpAddHero">+ Add photo</button>
+          <button type="button" class="admin-btn admin-btn-gold" id="hpSaveHero">Save photos</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="hpResetHero">Restore original</button>
+        </div>
+      </div>
+
+      <div class="admin-card" id="panelHpLocations" hidden>
+        <h2>Popular locations</h2>
+        <p class="admin-help">Each location is a photo tile on the home page. Tapping it shows the properties in that area (the name should match the property's Location, e.g. “Lekki Phase 1”).</p>
+        <div id="hpLocationsBox"></div>
+        <div class="admin-toolbar" style="margin:14px 0 0;">
+          <button type="button" class="admin-btn admin-btn-outline" id="hpAddLocation">+ Add location</button>
+          <button type="button" class="admin-btn admin-btn-gold" id="hpSaveLocations">Save locations</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="hpResetLocations">Restore original</button>
+        </div>
+      </div>
+
+      <div class="admin-card" id="panelHpStyles" hidden>
+        <h2>Browse by type</h2>
+        <p class="admin-help">Each tile filters the properties by their <strong>Type</strong>. “Matches property type” must be written exactly like the Type on your properties (e.g. Studio, 2-Bedroom, Penthouse).</p>
+        <datalist id="hpTypeList"></datalist>
+        <div id="hpStylesBox"></div>
+        <div class="admin-toolbar" style="margin:14px 0 0;">
+          <button type="button" class="admin-btn admin-btn-outline" id="hpAddStyle">+ Add type</button>
+          <button type="button" class="admin-btn admin-btn-gold" id="hpSaveStyles">Save types</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="hpResetStyles">Restore original</button>
+        </div>
+      </div>
+
+      <div class="admin-card" id="panelHpWhy" hidden>
+        <h2>Why choose us</h2>
+        <div class="admin-field"><label>Section heading</label><input type="text" id="hpWhyTitle" maxlength="60"></div>
+        <div id="hpWhyBox"></div>
+        <div class="admin-toolbar" style="margin:14px 0 0;">
+          <button type="button" class="admin-btn admin-btn-outline" id="hpAddWhy">+ Add point</button>
+          <button type="button" class="admin-btn admin-btn-gold" id="hpSaveWhy">Save</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="hpResetWhy">Restore original</button>
+        </div>
+      </div>
+
+      <div class="admin-card" id="panelHpAmenities" hidden>
+        <h2>Amenities you'll enjoy</h2>
+        <div class="admin-field"><label>Section heading</label><input type="text" id="hpAmenTitle" maxlength="60"></div>
+        <div class="admin-field"><label>Line under the heading</label><input type="text" id="hpAmenSub" maxlength="120"></div>
+        <div id="hpAmenitiesBox"></div>
+        <div class="admin-toolbar" style="margin:14px 0 0;">
+          <button type="button" class="admin-btn admin-btn-outline" id="hpAddAmenity">+ Add amenity</button>
+          <button type="button" class="admin-btn admin-btn-gold" id="hpSaveAmenities">Save amenities</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="hpResetAmenities">Restore original</button>
+        </div>
+      </div>
+
+      <div class="admin-card" id="panelHpTrust" hidden>
+        <h2>Trust badges</h2>
+        <p class="admin-help">The three badges at the top of the home page, and the row of numbers under them. Only put figures that are true — they're shown to every visitor.</p>
+        <div id="hpTrustBox"></div>
+        <div class="admin-toolbar" style="margin:14px 0 18px;">
+          <button type="button" class="admin-btn admin-btn-outline" id="hpAddTrust">+ Add badge</button>
+        </div>
+        <h2 style="margin-top:8px;">Numbers</h2>
+        <div id="hpStatsBox"></div>
+        <div class="admin-toolbar" style="margin:14px 0 0;">
+          <button type="button" class="admin-btn admin-btn-outline" id="hpAddStat">+ Add number</button>
+          <button type="button" class="admin-btn admin-btn-gold" id="hpSaveTrust">Save</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="hpResetTrust">Restore original</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="section-notifications" data-title="Notifications" hidden>
+      <div class="admin-card">
+        <h2>Send a notification</h2>
+        <p class="admin-help">Guests read it under Profile → Notifications, and see a red number there until they open it. Only signed-in guests can see notifications, and a message sent to one guest can't be read by anyone else.</p>
+        <form id="notifyForm" autocomplete="off">
+          <div class="admin-field">
+            <label>Send to</label>
+            <select name="audience">
+              <option value="all">Every guest</option>
+              <option value="one">One guest</option>
+            </select>
+          </div>
+          <div class="admin-field" id="notifyToWrap" hidden>
+            <label>Guest's email</label>
+            <input type="email" name="to" list="notifyUsers" placeholder="Start typing an email or name">
+            <datalist id="notifyUsers"></datalist>
+          </div>
+          <div class="admin-field"><label>Title</label><input type="text" name="title" maxlength="120" placeholder="e.g. 10% off this weekend"></div>
+          <div class="admin-field"><label>Message</label><textarea name="message" rows="4" maxlength="1000" placeholder="Write your message…"></textarea></div>
+          <button type="submit" class="admin-btn admin-btn-gold" id="notifySendBtn">Send notification</button>
+        </form>
+      </div>
+      <div class="admin-card">
+        <h2>Sent notifications</h2>
+        <div id="notifySentList"></div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="section-content" data-title="Content" hidden>
+      <div class="admin-card">
+        <h2>Edit the website's words</h2>
+        <div class="admin-toolbar" id="contentTabs" style="margin-bottom:0;">
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-gold" data-tab="faq">FAQ</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="privacy">Privacy</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="terms">Terms</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="about">About</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="site">Site text</button>
+        </div>
+      </div>
+
+      <div class="admin-card" id="panelFaq">
+        <h2>FAQ</h2>
+        <div id="faqEditor"></div>
+        <div class="admin-toolbar" style="margin:14px 0 0;">
+          <button type="button" class="admin-btn admin-btn-outline" id="addFaqBtn">+ Add question</button>
+          <button type="button" class="admin-btn admin-btn-gold" id="saveFaqBtn">Save FAQ</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="resetFaqBtn">Restore original</button>
+        </div>
+      </div>
+
+      <div class="admin-card" id="panelPage" hidden>
+        <h2>Page text</h2>
+        <div class="admin-field"><label>Page title</label><input type="text" id="pageTitle"></div>
+        <div class="admin-field">
+          <label>Text</label>
+          <textarea id="pageBody" rows="14" style="min-height:240px;"></textarea>
+          <span class="admin-field-hint">Leave a blank line between paragraphs. Start a line with # for a heading, or with - for a bullet. Links: [label](https://…). **bold**.</span>
+        </div>
+        <div class="admin-toolbar" style="margin:0 0 14px;">
+          <button type="button" class="admin-btn admin-btn-gold" id="savePageBtn">Save page</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="resetPageBtn">Restore original</button>
+        </div>
+        <h3 class="content-group">Preview</h3>
+        <div class="legal-content content-preview" id="pagePreview"></div>
+      </div>
+
+      <div class="admin-card" id="panelSite" hidden>
+        <h2>Site text</h2>
+        <p class="admin-help">Change the wording on the home page and the footer. Empty a box to go back to the original.</p>
+        <div id="siteTextEditor"></div>
+        <div class="admin-toolbar" style="margin:6px 0 0;">
+          <button type="button" class="admin-btn admin-btn-gold" id="saveSiteTextBtn">Save site text</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="resetSiteTextBtn">Restore all originals</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="section-users" data-title="Users" hidden>
+      <div class="admin-stats" id="userStats"></div>
+      <div class="admin-card">
+        <h2>Guest accounts</h2>
+        <div class="admin-toolbar">
+          <input type="search" class="admin-search" id="userSearch" placeholder="Search by name or email">
+        </div>
+        <div class="admin-table-wrap" id="usersTableWrap"></div>
+      </div>
+
+    </section>
+
+    <section class="admin-section" id="section-settings" data-title="Settings" hidden>
+      <div class="admin-card">
+        <h2>Contact details</h2>
+        <p class="admin-help">Shown across the public website (footer, Contact Us, WhatsApp button) and used for the WhatsApp booking message.</p>
+        <form id="contactForm">
+          <div class="admin-form-grid">
+            <div class="admin-field"><label>Phone number</label><input type="tel" name="phone" placeholder="+2348142230897"><span class="admin-field-hint">Start with + and the country code.</span></div>
+            <div class="admin-field"><label>WhatsApp number</label><input type="tel" name="whatsapp" placeholder="2348142230897"><span class="admin-field-hint">Digits only. Leave blank to use the phone number.</span></div>
+          </div>
+          <div class="admin-field"><label>Contact email</label><input type="email" name="email" placeholder="you@example.com"></div>
+          <button type="submit" class="admin-btn admin-btn-gold">Save contact details</button>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <h2>“Just booked” pop-up</h2>
+        <p class="admin-help">Shows visitors real bookings as they come in — only a first name, last initial and area (for example “Fatima A. booked a stay in Lekki Phase 1”). Cancelling a booking removes it from the pop-up. If there are no bookings, nothing is shown.</p>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:14px;"><input type="checkbox" id="bookingPopupToggle" checked> Show the pop-up on the website</label>
+        <div class="admin-toolbar" style="margin:0;">
+          <button type="button" class="admin-btn admin-btn-gold" id="savePopupBtn">Save</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="rebuildFeedBtn">Add my latest bookings to the pop-up</button>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h2>Photo uploads</h2>
+        <p class="admin-help">Photos you pick from your phone are uploaded to your Cloudinary account when these two are filled in. Leave them empty to use Firebase Storage.</p>
+        <form id="photoHostForm" autocomplete="off">
+          <div class="admin-form-grid">
+            <div class="admin-field"><label>Cloudinary cloud name</label><input type="text" name="cloudinaryCloud" placeholder="e.g. dxyz123"></div>
+            <div class="admin-field"><label>Unsigned upload preset</label><input type="text" name="cloudinaryPreset" placeholder="e.g. shortlet_unsigned"></div>
+          </div>
+          <button type="submit" class="admin-btn admin-btn-gold">Save photo settings</button>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <h2>Admin access</h2>
+        <p class="admin-help">These people can sign in at the <strong>admin sign-in screen</strong>. Only add someone who already has an account on the website (they sign up as a guest first).</p>
+        <div id="adminList"></div>
+        <form class="admin-add-row" id="adminAddForm">
+          <input type="email" id="newAdminEmail" placeholder="Email of the new admin">
+          <button type="submit" class="admin-btn admin-btn-gold">Add admin</button>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <h2>Your account</h2>
+        <p class="admin-help">Signed in as <strong id="accountEmail"></strong></p>
+        <form id="passwordForm" autocomplete="off">
+          <div class="admin-field"><label>Current password</label><input type="password" name="currentPassword" autocomplete="current-password"></div>
+          <div class="admin-form-grid">
+            <div class="admin-field"><label>New password</label><input type="password" name="newPassword" autocomplete="new-password" placeholder="At least 8 characters"></div>
+            <div class="admin-field"><label>Confirm new password</label><input type="password" name="confirmPassword" autocomplete="new-password"></div>
+          </div>
+          <button type="submit" class="admin-btn admin-btn-gold">Change password</button>
+        </form>
+        <p class="admin-help" style="margin:16px 0 8px;">Forgot your current password?</p>
+        <button type="button" class="admin-btn admin-btn-outline" id="resetPwBtn">Email me a password reset link</button>
+      </div>
+
+    </section>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-storage-compat.js"></script>
+<script src="firebase-init.js"></script>
+<script src="script.js"></script>
+<script src="data-service.js"></script>
+<script>
+/* ===== generated defaults ===== */
+var CONTENT_DEFAULTS = {"privacy": {"title": "Privacy Policy", "body": "Shortlet Magnificent (\"we\", \"us\") respects your privacy. This page explains what information we collect when you use this site and how we use it.\n\n# Information we collect\n\nWhen you request to book a stay, we collect your name, phone number, email address, and the dates and apartment you're enquiring about. Saved stays and booking history are stored on your own device (browser local storage) and are not automatically shared with anyone.\n\n# How we use it\n\nWe use your details to respond to booking requests, confirm availability, process payments, and communicate with you on WhatsApp, phone or email about your stay.\n\n# Payments\n\nCard and online payments are processed securely by Paystack. We do not store your card details on our servers.\n\n# Third parties\n\nWe do not sell your personal information. We may share booking details with the apartment's building management or security desk solely to arrange your check-in.\n\n# Contact us\n\nQuestions about this policy? Reach us at Magnificenthomes4u@gmail.com or on [WhatsApp](https://wa.me/2348142230897).", "updated": "September 2026"}, "terms": {"title": "Terms of Service", "body": "By booking a stay with Shortlet Magnificent, you agree to the following terms.\n\n# Bookings\n\nA booking request is a request to reserve dates and is not confirmed until we've verified availability and received payment or an agreed deposit.\n\n# Payments\n\nPayments can be made online via Paystack (card, transfer or USSD) or by direct bank transfer arranged over WhatsApp. Prices are quoted per night in Naira and may exclude a service fee shown at checkout.\n\n# Cancellations\n\nCancellation and refund terms will be confirmed with you at the time of booking, based on the specific apartment and how close to check-in the cancellation is made.\n\n# Guest conduct\n\nGuests are expected to respect the property, its neighbours, and the building's house rules (including any stated maximum occupancy). Damage caused during a stay may be charged to the guest.\n\n# Check-in / Check-out\n\nCheck-in and check-out times will be shared with you before arrival and may vary by apartment.\n\n# Contact us\n\nQuestions about these terms? Reach us at Magnificenthomes4u@gmail.com or on [WhatsApp](https://wa.me/2348142230897).", "updated": "September 2026"}, "about": {"title": "About Us", "body": "Shortlet Magnificent offers verified, fully furnished shortlet apartments across Lagos — studios, apartments and maisonettes for a night, a week or longer.\n\n# What we do\n\nEvery listing on this site is personally inspected before it goes live, so what you see is what you get. Our team supports guests on WhatsApp from check-in to check-out.\n\n# Simple, honest pricing\n\nThe price you see is the price you pay, with no hidden fees. The service fee is shown at checkout before you book.\n\n# Get in touch\n\nReady to book, or have a question? Reach us at Magnificenthomes4u@gmail.com or on [WhatsApp](https://wa.me/2348142230897).", "updated": ""}, "faq": {"items": [{"q": "How do I book a shortlet apartment?", "a": "Browse Stays, open a listing you like, and tap “Request to Book.” We'll confirm availability and payment details with you directly before your stay is finalised."}, {"q": "What payment methods do you accept?", "a": "We accept bank transfer and card payments. You'll see the available options during checkout when you request a booking."}, {"q": "Can I cancel or reschedule a booking?", "a": "Yes — contact us as soon as possible by phone or WhatsApp. Cancellation terms depend on how close it is to your check-in date."}, {"q": "Do I need an account to book a stay?", "a": "You can browse and view listings as a guest, but you'll need to log in or create an account to request a booking and track it under My Bookings."}, {"q": "Are your apartments verified?", "a": "Yes — every listing on Shortlet Magnificent is verified and fully furnished before it goes live on the site."}, {"q": "How can I contact support?", "a": "Reach us anytime by phone, WhatsApp or email from the Help & Support page, or the contact details in the footer."}]}};
+var SITE_TEXT_FIELDS = [{"key": "hero_line1", "label": "Top banner — line 1", "group": "Home page", "default": "Book Your", "multiline": false}, {"key": "hero_line2", "label": "Top banner — line 2 (gold)", "group": "Home page", "default": "Luxury Stay", "multiline": false}, {"key": "hero_line3", "label": "Top banner — line 3", "group": "Home page", "default": "in Lagos", "multiline": false}, {"key": "hero_sub", "label": "Top banner — small text (new line = line break)", "group": "Home page", "default": "Studios. Apartments. Maisonettes.\nVerified, Fully Furnished Stays.", "multiline": true}, {"key": "cta_title", "label": "Booking banner — title", "group": "Home page", "default": "Ready to Book Your Stay?", "multiline": false}, {"key": "cta_text", "label": "Booking banner — text", "group": "Home page", "default": "Chat with us on WhatsApp and let's sort your dates.", "multiline": false}, {"key": "gallery_title", "label": "Gallery strip — heading", "group": "Home page", "default": "Gallery", "multiline": false}, {"key": "footer_tagline", "label": "Footer — tagline (every page)", "group": "Footer", "default": "Verified 5-star shortlet apartments across Lagos, trusted by 3,000+ guests.", "multiline": false}, {"key": "footer_copy", "label": "Footer — bottom text (new line = line break)", "group": "Footer", "default": "© 2026 Shortlet Magnificent.\nPremium shortlet apartments across Lagos.", "multiline": true}];
+
+/* ===== admin-shared.js ===== */
+/* ==========================================================
+   ADMIN — SHARED HELPERS (menu, toast, formatting)
+
+   ACCESS: the panel opens only for a signed-in user that passes
+   AdminAuth.isAdmin() (owner email in firebase-init.js, or an email in the
+   Firestore "admins" collection). Everyone else gets the admin sign-in
+   screen — never the guest login.
+
+   The admin signs in through their OWN Firebase session that is never
+   saved: reloading or reopening the page always asks for the password
+   again, and it doesn't touch the guest login on the public site.
+
+   SECURITY NOTE: this only hides the admin UI. The real lock is the
+   Firestore rules in firestore.rules.
+========================================================== */
+
+/* ---------- Admin session (separate from the guest login, never persisted) ---------- */
+var adminApp = firebase.initializeApp(firebase.app().options, "admin");
+var adminAuthSdk = adminApp.auth();
+var adminDb = adminApp.firestore();
+adminAuthSdk.setPersistence(firebase.auth.Auth.Persistence.NONE);
+// From here on the shared DataService reads/writes Firestore as the admin.
+window.db = adminDb;
+
+var AdminAuth = (function(){
+  var current = null, initDone = false, initCbs = [], outCbs = [];
+
+  adminAuthSdk.onAuthStateChanged(function(user){
+    var was = current;
+    current = user;
+    if(!initDone){
+      initDone = true;
+      initCbs.splice(0).forEach(function(cb){ cb(user); });
+    } else if(!user && was){
+      outCbs.forEach(function(cb){ cb(); });
+    }
+  });
+
+  return {
+    currentUser: function(){ return current; },
+    onInit: function(cb){ if(initDone) cb(current); else initCbs.push(cb); },
+    onLogout: function(cb){ outCbs.push(cb); },
+    login: function(email, password){
+      return adminAuthSdk.setPersistence(firebase.auth.Auth.Persistence.NONE).then(function(){
+        return adminAuthSdk.signInWithEmailAndPassword(email, password);
+      });
+    },
+    logout: function(){ return adminAuthSdk.signOut(); },
+    sendPasswordReset: function(email){ return adminAuthSdk.sendPasswordResetEmail(email); },
+    // Re-checks the current password first, then sets the new one.
+    changePassword: function(currentPassword, newPassword){
+      var u = adminAuthSdk.currentUser;
+      if(!u || !u.email) return Promise.reject(new Error("You're not signed in."));
+      var cred = firebase.auth.EmailAuthProvider.credential(u.email, currentPassword);
+      return u.reauthenticateWithCredential(cred).then(function(){ return u.updatePassword(newPassword); });
+    },
+    // true if the owner email, or listed in Firestore admins/<email>
+    isAdmin: function(user){
+      if(!user || !user.email) return Promise.resolve(false);
+      var email = user.email.toLowerCase();
+      if((window.ADMIN_EMAILS || []).indexOf(email) !== -1) return Promise.resolve(true);
+      return adminDb.collection("admins").doc(email).get()
+        .then(function(snap){ return snap.exists; })
+        .catch(function(){ return false; });
+    }
+  };
+})();
+
+
+/* ---------- Photo uploads (Cloudinary if set up in Settings, else Firebase Storage) ---------- */
+var adminUploadConfig = null;
+function adminLoadUploadConfig(){
+  if(adminUploadConfig) return Promise.resolve(adminUploadConfig);
+  return DataService.getSettings().then(function(s){
+    adminUploadConfig = { cloud: String(s.cloudinaryCloud || "").trim(), preset: String(s.cloudinaryPreset || "").trim() };
+    return adminUploadConfig;
+  });
+}
+function adminResetUploadConfig(){ adminUploadConfig = null; }
+
+// Shrinks a photo picked from the phone (max 1600px wide) before uploading it.
+function adminCompressToBlob(file, maxDim, quality){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onerror = function(){ reject(new Error("Couldn't read " + file.name)); };
+    reader.onload = function(){
+      var img = new Image();
+      img.onerror = function(){ reject(new Error(file.name + " isn't an image this browser can open.")); };
+      img.onload = function(){
+        var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(function(blob){
+          if(blob) resolve(blob); else reject(new Error("Couldn't prepare " + file.name));
+        }, "image/jpeg", quality);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function adminCloudinaryUpload(blob, cfg){
+  // Every photo gets its OWN name. With one shared name ("photo.jpg") a photo host
+  // set to "use filename" saves each upload over the last one, so every picture
+  // ends up showing the same image.
+  var uid = "magnificent_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+  var fd = new FormData();
+  fd.append("file", blob, uid + ".jpg");
+  fd.append("public_id", uid);
+  fd.append("upload_preset", cfg.preset);
+  return fetch("https://api.cloudinary.com/v1_1/" + encodeURIComponent(cfg.cloud) + "/image/upload", { method: "POST", body: fd })
+    .then(function(res){ return res.json(); })
+    .then(function(json){
+      if(json && json.secure_url) return json.secure_url;
+      throw new Error((json && json.error && json.error.message) || "The photo host rejected the upload.");
+    });
+}
+
+function adminStorageUpload(blob){
+  if(typeof adminApp.storage !== "function") return Promise.reject(new Error("Photo upload isn't available right now."));
+  var storage = adminApp.storage();
+  if(storage.setMaxUploadRetryTime) storage.setMaxUploadRetryTime(20000);
+  var name = "photos/" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + ".jpg";
+  var ref = storage.ref(name);
+  return ref.put(blob, { contentType: "image/jpeg" }).then(function(snap){ return snap.ref.getDownloadURL(); });
+}
+
+// Gives up on a slow/unavailable upload instead of leaving the admin waiting.
+function adminWithTimeout(promise, ms, message){
+  return new Promise(function(resolve, reject){
+    var timer = setTimeout(function(){ reject(new Error(message)); }, ms);
+    promise.then(function(v){ clearTimeout(timer); resolve(v); }, function(e){ clearTimeout(timer); reject(e); });
+  });
+}
+
+// Resolves to the public URL of the uploaded photo.
+function adminUploadPhoto(file){
+  return Promise.all([adminCompressToBlob(file, 1600, 0.82), adminLoadUploadConfig()]).then(function(r){
+    var blob = r[0], cfg = r[1];
+    return (cfg.cloud && cfg.preset)
+      ? adminWithTimeout(adminCloudinaryUpload(blob, cfg), 45000, "The photo upload took too long.")
+      : adminWithTimeout(adminStorageUpload(blob), 12000, "The photo upload took too long.");
+  });
+}
+
+/* ---------- Navigation (single source of truth for every page) ---------- */
+var ADMIN_NAV = [
+  { key:"dashboard", label:"Dashboard", href:"#dashboard",
+    icon:'<rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>' },
+  { key:"properties", label:"Properties", href:"#properties",
+    icon:'<path d="M4 11L12 4L20 11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10V19.5H18V10" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 19.5V14.5H14.5V19.5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>' },
+  { key:"bookings", label:"Bookings", href:"#bookings",
+    icon:'<rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 9.5H20" stroke="currentColor" stroke-width="1.7"/><path d="M8 3V6.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 3V6.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M8.5 13.3L11 15.6L15.5 11.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' },
+  { key:"reviews", label:"Reviews", href:"#reviews",
+    icon:'<path d="M12 4L14.5 9.3L20.3 10.1L16.1 14.1L17.2 20L12 17.1L6.8 20L7.9 14.1L3.7 10.1L9.5 9.3L12 4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' },
+  { key:"gallery", label:"Gallery", href:"#gallery",
+    icon:'<rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/><circle cx="8.5" cy="9.5" r="1.6" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 17L9 12.5L12 15.5L15.5 12L19.5 16" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' },
+  { key:"promos", label:"Promo codes", href:"#promos",
+    icon:'<path d="M4 8.5C4 7.7 4.7 7 5.5 7H18.5C19.3 7 20 7.7 20 8.5V10C18.9 10 18 10.9 18 12C18 13.1 18.9 14 20 14V15.5C20 16.3 19.3 17 18.5 17H5.5C4.7 17 4 16.3 4 15.5V14C5.1 14 6 13.1 6 12C6 10.9 5.1 10 4 10V8.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14.5 9.5L9.5 14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
+  { key:"homepage", label:"Home page", href:"#homepage",
+    icon:'<rect x="3.5" y="4.5" width="17" height="6" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="7.5" height="6" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="13.5" width="7.5" height="6" rx="1.5" stroke="currentColor" stroke-width="1.7"/>' },
+  { key:"content", label:"Content", href:"#content",
+    icon:'<path d="M6 4.5H14L18 8.5V19C18 19.3 17.8 19.5 17.5 19.5H6.5C6.2 19.5 6 19.3 6 19V4.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 4.5V8.5H18" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12H15M9 15.5H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' },
+  { key:"notifications", label:"Notifications", href:"#notifications",
+    icon:'<path d="M6 10.5C6 7.5 8.2 5 12 5C15.8 5 18 7.5 18 10.5C18 14.5 19.5 15.5 19.5 16.5H4.5C4.5 15.5 6 14.5 6 10.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 19C10.3 19.9 11 20.5 12 20.5C13 20.5 13.7 19.9 14 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>' },
+  { key:"users", label:"Users", href:"#users",
+    icon:'<circle cx="9" cy="8.5" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19C3.5 15.7 6 13.5 9 13.5C12 13.5 14.5 15.7 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M15.5 6.5C17 6.8 18 8 18 9.5C18 11 17 12.2 15.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M16.5 13.7C18.7 14.2 20.3 15.9 20.5 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' },
+  { key:"settings", label:"Settings", href:"#settings",
+    icon:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M19.4 13.5C19.5 13 19.5 12.5 19.4 12L21 10.6L19.5 8L17.5 8.6C17 8.2 16.5 7.9 16 7.6L15.6 5.5H12.4L12 7.6C11.5 7.9 11 8.2 10.5 8.6L8.5 8L7 10.6L8.6 12C8.5 12.5 8.5 13 8.6 13.5L7 15L8.5 17.6L10.5 17C11 17.4 11.5 17.7 12 17.9L12.4 20H15.6L16 17.9C16.5 17.7 17 17.4 17.5 17L19.5 17.6L21 15L19.4 13.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>' }
+];
+
+/* ---------- Sidebar / drawer ---------- */
+// Builds the menu once. admin-app.js marks the active link as sections change.
+function initAdminChrome(){
+  var sidebar = document.getElementById("adminSidebar");
+  var scrim = document.getElementById("adminScrim");
+  var menuBtn = document.getElementById("adminMenuBtn");
+
+  sidebar.innerHTML =
+    '<div class="admin-sidebar-brand">' +
+      '<span class="brand-icon"><img src="images/logo-icon.png?v=2" alt="" style="width:100%;height:100%;object-fit:contain;"></span>' +
+      '<span class="brand-text"><span class="brand-name">SHORTLET</span><span class="brand-name">MAGNIFICENT</span></span>' +
+    '</div>' +
+    '<div class="admin-sidebar-eyebrow">Admin</div>' +
+    '<nav class="admin-nav">' +
+      ADMIN_NAV.map(function(n){
+        return '<a class="admin-nav-link" data-key="' + n.key + '" href="' + n.href + '">' +
+          '<svg viewBox="0 0 24 24" fill="none">' + n.icon + '</svg><span>' + n.label + '</span></a>';
+      }).join("") +
+      '<a class="admin-nav-link" href="index.html" target="_blank" rel="noopener" style="margin-top:10px;">' +
+        '<svg viewBox="0 0 24 24" fill="none"><path d="M14 5H19V10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 5L11 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M17 14V18C17 18.6 16.6 19 16 19H6C5.4 19 5 18.6 5 18V8C5 7.4 5.4 7 6 7H10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>' +
+        '<span>View website</span></a>' +
+    '</nav>' +
+    '<div class="admin-sidebar-foot">' +
+      '<div class="admin-signed-in" id="adminSignedIn"></div>' +
+      '<button class="admin-logout" id="adminLogoutBtn" type="button">' +
+        '<svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M9 4H6C4.9 4 4 4.9 4 6V18C4 19.1 4.9 20 6 20H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 15L20 12L16 9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12H10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>' +
+        'Log out' +
+      '</button>' +
+    '</div>';
+
+  function open(){ sidebar.classList.add("open"); scrim.classList.add("show"); }
+  function close(){ sidebar.classList.remove("open"); scrim.classList.remove("show"); }
+  if(menuBtn) menuBtn.addEventListener("click", open);
+  if(scrim) scrim.addEventListener("click", close);
+  sidebar.addEventListener("click", function(e){ if(e.target.closest(".admin-nav-link")) close(); });
+
+  document.getElementById("adminLogoutBtn").addEventListener("click", function(){ AdminAuth.logout(); });
+  setAdminSignedIn();
+}
+
+function setAdminSignedIn(){
+  var user = AdminAuth.currentUser();
+  var el = document.getElementById("adminSignedIn");
+  if(user && el) el.textContent = user.email;
+}
+
+/* ---------- Toast ---------- */
+function adminToast(message){
+  var el = document.getElementById("adminToast");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "adminToast";
+    el.className = "admin-toast";
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.classList.remove("show"); }, 2800);
+}
+
+/* ---------- Small helpers ---------- */
+function adminEsc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+  });
+}
+function adminFormatMoney(n){
+  return "₦" + Number(n || 0).toLocaleString("en-NG");
+}
+function adminFormatDate(iso){
+  if(!iso) return "—";
+  var d = new Date(iso);
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
+}
+function adminUid(){
+  return "id_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+
+// "0803 123 4567" / "+234 803 123 4567" -> "2348031234567" (for wa.me links)
+function adminWhatsAppNumber(phone){
+  var d = String(phone || "").replace(/\D/g, "");
+  if(d.indexOf("234") === 0) return d;
+  if(d.charAt(0) === "0") return "234" + d.slice(1);
+  if(d.length === 10) return "234" + d;
+  return d;
+}
+
+/* ===== admin-data.js ===== */
+/* ==========================================================
+   ADMIN DATA LAYER
+   Thin wrapper around DataService so the admin pages have one
+   stable API regardless of what's backing it underneath.
+========================================================== */
+window.AdminData = {
+  getProperties(){ return DataService.listProperties(); },
+  getProperty(id){ return DataService.getProperty(id); },
+  saveProperty(prop){ return DataService.saveProperty(prop); },
+  deleteProperty(id){ return DataService.deleteProperty(id); },
+
+  getReviews(){ return DataService.listReviews(); },
+  saveReview(review){ return DataService.saveReview(review); },
+  deleteReview(id){ return DataService.deleteReview(id); },
+
+  getBookings(){
+    return DataService.listAllEnquiries().then(function(list){
+      return list.map(function(b){ return Object.assign({ status: "New" }, b); });
+    });
+  },
+  setBookingStatus(id, status){ return DataService.setEnquiryStatus(id, status); },
+
+  getGallery(){ return DataService.listGallery({ strict: true }); },
+  addGalleryItem(item){ return DataService.addGalleryItem(item); },
+  updateGalleryItem(id, patch){ return DataService.updateGalleryItem(id, patch); },
+  deleteGalleryItem(id){ return DataService.deleteGalleryItem(id); },
+
+  getUsers(){ return DataService.listUsers(); },
+
+  sendBroadcast(n, by){ return DataService.sendBroadcast(n, by); },
+  sendNotification(user, n, by){ return DataService.sendNotification(user, n, by); },
+  getSentNotifications(){ return DataService.listSentNotifications(); },
+  deleteSentNotification(item){ return DataService.deleteSentNotification(item); },
+  syncBookingFeed(booking, status, location){ return DataService.syncBookingFeed(booking, status, location); },
+  rebuildBookingFeed(bookings, locationFor){ return DataService.rebuildBookingFeed(bookings, locationFor); },
+
+  getPromos(){ return DataService.listPromos(); },
+  savePromo(p){ return DataService.savePromo(p); },
+  deletePromo(code){ return DataService.deletePromo(code); },
+
+  getSettings(){ return DataService.getSettings(); },
+  saveSettings(data){ return DataService.saveSettings(data); },
+  getAdmins(){ return DataService.listAdmins(); },
+  addAdmin(email, addedBy){ return DataService.addAdmin(email, addedBy); },
+  removeAdmin(email){ return DataService.removeAdmin(email); }
+};
+
+/* ===== admin-dashboard.js ===== */
+/* ==========================================================
+   ADMIN — DASHBOARD SECTION
+========================================================== */
+function initDashboardPage(){
+  document.getElementById("seedBtn").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = "Importing…";
+    DataService.seedIfEmpty().then(function(result){
+      adminToast(result.written ? "Imported starter data." : "Firestore already has data — nothing changed.");
+      renderDashboard();
+    }).catch(function(err){
+      adminToast("Couldn't import: " + err.message);
+    }).finally(function(){
+      btn.disabled = false;
+      btn.textContent = "Import starter data to Firestore";
+    });
+  });
+  renderDashboard();
+}
+
+function renderDashboard(){
+  var statsEl = document.getElementById("adminStats");
+  var recentEl = document.getElementById("adminRecentBookings");
+  statsEl.innerHTML = '<p class="admin-empty">Loading…</p>';
+
+  Promise.all([
+    AdminData.getProperties(),
+    AdminData.getReviews(),
+    AdminData.getBookings(),
+    AdminData.getUsers().catch(function(){ return []; }),
+    AdminData.getGallery().catch(function(){ return []; })
+  ]).then(function(results){
+    var props = results[0], reviews = results[1], bookings = results[2], users = results[3], gallery = results[4];
+    var open = bookings.filter(function(b){ return ["Confirmed","Cancelled"].indexOf(b.status) === -1; }).length;
+    var avgRating = reviews.length ? (reviews.reduce(function(s,r){ return s+(r.rating||0); },0)/reviews.length).toFixed(1) : "—";
+
+    function stat(num, label){
+      return '<div class="admin-stat-card"><div class="admin-stat-num">' + num + '</div><div class="admin-stat-label">' + label + '</div></div>';
+    }
+    statsEl.innerHTML =
+      stat(props.length, "Properties") +
+      stat(open, "Open enquiries") +
+      stat(bookings.length, "Total enquiries") +
+      stat(avgRating, "Avg. rating (" + reviews.length + ")") +
+      stat(users.length, "Guest accounts") +
+      stat(gallery.length, "Gallery uploads");
+
+    // Guest-submitted text, so everything is escaped before it goes into the page.
+    var recent = bookings.slice(0,5);
+    recentEl.innerHTML = recent.length ?
+      '<table class="admin-table"><thead><tr><th>Guest</th><th>Property</th><th>Dates</th><th>Status</th></tr></thead><tbody>' +
+      recent.map(function(b){
+        var status = String(b.status || "New");
+        return '<tr><td>' + adminEsc(b.name || "—") + '<br><span style="color:var(--text-muted);font-size:12px;">' + adminEsc(b.phone || "") + '</span></td>' +
+          '<td>' + adminEsc(b.property || "—") + '</td>' +
+          '<td>' + adminFormatDate(b.checkin) + ' \u2192 ' + adminFormatDate(b.checkout) + '</td>' +
+          '<td><span class="admin-badge admin-badge-' + adminEsc(status.toLowerCase()) + '">' + adminEsc(status) + '</span></td></tr>';
+      }).join("") + '</tbody></table>'
+      : '<p class="admin-empty">No booking enquiries yet.</p>';
+  }).catch(function(err){
+    statsEl.innerHTML = '<p class="admin-empty">Couldn\'t load dashboard data: ' + adminEsc(err.message) + '</p>';
+  });
+}
+
+/* ===== admin-properties.js ===== */
+/* ==========================================================
+   ADMIN — PROPERTIES PAGE
+========================================================== */
+var editingId = null;
+var editingHostPhoto = "";
+var draftAmenities = [];
+var draftImages = [];
+var uploadingPhotos = false;
+var draftBlocked = [];
+
+function initPropertiesPage(){
+  renderPropertiesTable();
+  document.getElementById("addPropertyBtn").addEventListener("click", function(){ openPropertyModal(null); });
+  document.getElementById("propertyModalScrim").addEventListener("click", function(e){
+    if(e.target.id === "propertyModalScrim") closePropertyModal();
+  });
+  document.getElementById("propertyModalClose").addEventListener("click", closePropertyModal);
+  document.getElementById("propertyForm").addEventListener("submit", onSaveProperty);
+
+  document.getElementById("amenityInput").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); addAmenity(this.value); this.value = ""; }
+  });
+  document.getElementById("addAmenityBtn").addEventListener("click", function(){
+    var input = document.getElementById("amenityInput");
+    addAmenity(input.value); input.value = "";
+  });
+  document.getElementById("propertyPhotoFiles").addEventListener("change", function(){
+    var files = Array.prototype.slice.call(this.files || []);
+    this.value = "";
+    if(files.length) uploadPropertyPhotos(files);
+  });
+  document.getElementById("addBlockedBtn").addEventListener("click", function(){
+    var from = document.getElementById("blockFrom").value;
+    var to = document.getElementById("blockTo").value || from;
+    if(!from){ adminToast("Pick the first date to block."); return; }
+    if(to < from){ adminToast("The last date can't be before the first."); return; }
+    draftBlocked.push({ from: from, to: to, note: document.getElementById("blockNote").value.trim() });
+    document.getElementById("blockFrom").value = "";
+    document.getElementById("blockTo").value = "";
+    document.getElementById("blockNote").value = "";
+    renderBlockedList();
+  });
+  document.getElementById("blockedList").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-i]");
+    if(btn){ draftBlocked.splice(Number(btn.dataset.i), 1); renderBlockedList(); }
+  });
+  document.getElementById("addImageBtn").addEventListener("click", function(){
+    var input = document.getElementById("imageUrlInput");
+    if(input.value.trim()){ draftImages.push(input.value.trim()); input.value = ""; renderImageList(); }
+  });
+}
+
+function renderPropertiesTable(){
+  var wrap = document.getElementById("propertiesTableWrap");
+  wrap.innerHTML = '<p class="admin-empty">Loading properties…</p>';
+  AdminData.getProperties().then(function(list){
+    if(!list.length){
+      wrap.innerHTML = '<p class="admin-empty">No properties yet. Click "Add Property" to create your first listing.</p>';
+      return;
+    }
+    wrap.innerHTML = '<table class="admin-table"><thead><tr><th>Property</th><th>Location</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody>' +
+      list.map(function(p){
+        var img = (p.images && p.images[0]) || "";
+        var badgeClass = "admin-badge-" + (p.status || "Available").toLowerCase();
+        return '<tr>' +
+          '<td><div class="admin-row-title">' +
+            (img ? '<img class="admin-row-thumb" src="' + img + '" alt="">' : '') +
+            '<span>' + escapeHtml(p.title || "Untitled") + '<br><span style="font-weight:400;color:var(--text-muted);font-size:12px;">' + escapeHtml(p.type||"") + '</span></span>' +
+          '</div></td>' +
+          '<td>' + escapeHtml(p.location || "—") + '</td>' +
+          '<td>' + escapeHtml(p.price || (p.priceValue ? adminFormatMoney(p.priceValue) : "—")) + (p.period||"") + '</td>' +
+          '<td><span class="admin-badge ' + badgeClass + '">' + escapeHtml(p.status || "Available") + '</span></td>' +
+          '<td><div class="admin-row-actions">' +
+            '<button class="admin-btn admin-btn-outline admin-btn-sm" onclick="openPropertyModal(\'' + p.id + '\')">Edit</button>' +
+            '<button class="admin-btn admin-btn-danger admin-btn-sm" onclick="onDeleteProperty(\'' + p.id + '\')">Delete</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join("") + '</tbody></table>';
+  }).catch(function(err){
+    wrap.innerHTML = '<p class="admin-empty">Couldn\'t load properties: ' + escapeHtml(err.message) + '</p>';
+  });
+}
+
+function openPropertyModal(id){
+  editingId = id;
+  editingHostPhoto = "";
+  var applyToForm = function(p){
+    document.getElementById("propertyModalTitle").textContent = p ? "Edit property" : "Add property";
+    var f = document.getElementById("propertyForm");
+    f.title.value = p ? p.title : "";
+    f.type.value = p ? p.type : "";
+    f.location.value = p ? p.location : "";
+    f.status.value = p ? (p.status || "Available") : "Available";
+    f.priceValue.value = p ? p.priceValue : "";
+    f.period.value = p ? (p.period || "/night") : "/night";
+    f.bedrooms.value = p ? p.bedrooms : "";
+    f.bathrooms.value = p ? p.bathrooms : "";
+    f.guests.value = p ? p.guests : "";
+    f.furnishing.value = p ? (p.furnishing || "") : "";
+    f.minStay.value = p ? (p.minStay || "") : "";
+    f.description.value = p ? (p.description || "") : "";
+    f.mapLocation.value = p ? (p.mapLocation || p.coords || "") : "";
+    f.hostPhone.value = p && p.host ? (p.host.phone || "") : "";
+    f.hostWhatsapp.value = p && p.host ? (p.host.whatsapp || "") : "";
+    f.hostEmail.value = p && p.host ? (p.host.email || "") : "";
+    editingHostPhoto = (p && p.host && p.host.photo) || "";
+
+    draftBlocked = p && p.blockedRanges ? p.blockedRanges.map(function(r){ return Object.assign({}, r); }) : [];
+    renderBlockedList();
+    document.getElementById("propertyPhotoStatus").textContent = "";
+    document.getElementById("propertyPhotoLabel").textContent = "Tap to add photos from your phone";
+    draftAmenities = p && p.amenities ? p.amenities.slice() : [];
+    draftImages = p && p.images ? p.images.slice() : [];
+    renderAmenityList();
+    renderImageList();
+
+    document.getElementById("propertyModalScrim").classList.add("show");
+  };
+  if(id){
+    AdminData.getProperty(id).then(applyToForm);
+  } else {
+    applyToForm(null);
+  }
+}
+function closePropertyModal(){
+  document.getElementById("propertyModalScrim").classList.remove("show");
+}
+
+function addAmenity(value){
+  value = (value || "").trim();
+  if(!value) return;
+  draftAmenities.push(value);
+  renderAmenityList();
+}
+function renderAmenityList(){
+  document.getElementById("amenityTags").innerHTML = draftAmenities.map(function(a, i){
+    return '<span class="admin-tag">' + escapeHtml(a) + '<button type="button" onclick="removeAmenity(' + i + ')">✕</button></span>';
+  }).join("");
+}
+function removeAmenity(i){ draftAmenities.splice(i,1); renderAmenityList(); }
+
+// Uploads the photos picked from the phone one by one and adds each to the listing.
+function uploadPropertyPhotos(files){
+  var status = document.getElementById("propertyPhotoStatus");
+  var label = document.getElementById("propertyPhotoLabel");
+  var failed = [];
+  uploadingPhotos = true;
+  files.reduce(function(chain, file, i){
+    return chain.then(function(){
+      status.textContent = "Uploading " + (i + 1) + " of " + files.length + "…";
+      return adminUploadPhoto(file).then(function(url){
+        draftImages.push(url);
+        renderImageList();
+      }).catch(function(err){
+        console.warn("Photo upload failed:", err);
+        failed.push(file.name + " (" + err.message + ")");
+      });
+    });
+  }, Promise.resolve()).then(function(){
+    uploadingPhotos = false;
+    status.textContent = failed.length ? "Couldn't upload: " + failed.join("; ") : "";
+    if(!failed.length) label.textContent = "Tap to add more photos";
+  });
+}
+
+function renderBlockedList(){
+  var box = document.getElementById("blockedList");
+  if(!draftBlocked.length){ box.innerHTML = '<p class="admin-field-hint">No blocked dates. Guests can book any date.</p>'; return; }
+  box.innerHTML = draftBlocked.map(function(r, i){
+    return '<div class="admin-list-row"><span>' + adminFormatDate(r.from) + ' → ' + adminFormatDate(r.to) +
+      (r.note ? ' <span style="color:var(--text-muted);">· ' + adminEsc(r.note) + '</span>' : '') + '</span>' +
+      '<button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-i="' + i + '">Remove</button></div>';
+  }).join("");
+}
+
+function renderImageList(){
+  document.getElementById("imageThumbs").innerHTML = draftImages.map(function(url, i){
+    return '<span class="admin-image-thumb"><img src="' + url + '" alt=""><button type="button" onclick="removeImage(' + i + ')">✕</button></span>';
+  }).join("");
+}
+function removeImage(i){ draftImages.splice(i,1); renderImageList(); }
+
+function onSaveProperty(e){
+  e.preventDefault();
+  var f = e.target;
+  if(uploadingPhotos){ adminToast("Photos are still uploading — wait a moment."); return; }
+  var priceValue = Number(f.priceValue.value || 0);
+  var prop = {
+    id: editingId,
+    title: f.title.value.trim(),
+    type: f.type.value.trim(),
+    location: f.location.value.trim(),
+    status: f.status.value,
+    price: adminFormatMoney(priceValue),
+    priceValue: priceValue,
+    period: f.period.value.trim() || "/night",
+    bedrooms: Number(f.bedrooms.value || 0),
+    bathrooms: Number(f.bathrooms.value || 0),
+    guests: Number(f.guests.value || 0),
+    furnishing: f.furnishing.value.trim(),
+    minStay: f.minStay.value.trim(),
+    amenities: draftAmenities.slice(),
+    images: draftImages.slice(),
+    blockedRanges: draftBlocked.slice(),
+    description: f.description.value.trim(),
+    mapLocation: f.mapLocation.value.trim(),
+    // older listings stored plain "lat,lng" here; keep it in step when that's what was typed
+    coords: /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(f.mapLocation.value.trim()) ? f.mapLocation.value.trim() : "",
+    host: {
+      name: "Shortlet Magnificent",
+      company: "Shortlet Magnificent",
+      phone: f.hostPhone.value.trim(),
+      whatsapp: f.hostWhatsapp.value.trim(),
+      email: f.hostEmail.value.trim(),
+      photo: editingHostPhoto
+    }
+  };
+  if(!prop.title || !prop.location){
+    adminToast("Please add at least a title and location.");
+    return;
+  }
+  var submitBtn = f.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  AdminData.saveProperty(prop).then(function(){
+    closePropertyModal();
+    renderPropertiesTable();
+    adminToast(editingId ? "Property updated." : "Property added.");
+  }).catch(function(err){
+    adminToast("Couldn't save: " + err.message);
+  }).finally(function(){
+    submitBtn.disabled = false;
+  });
+}
+
+function onDeleteProperty(id){
+  if(!confirm("Delete this property? This can't be undone.")) return;
+  AdminData.deleteProperty(id).then(function(){
+    renderPropertiesTable();
+    adminToast("Property deleted.");
+  }).catch(function(err){
+    adminToast("Couldn't delete: " + err.message);
+  });
+}
+
+function escapeHtml(s){
+  return String(s || "").replace(/[&<>"']/g, function(c){
+    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+  });
+}
+
+/* ===== admin-bookings.js ===== */
+/* ==========================================================
+   ADMIN — BOOKINGS / ENQUIRIES PAGE
+========================================================== */
+var bookingFilter = "All";
+var bookingsCache = [];
+var orderBackfillTried = false;
+var STATUSES = ["New", "Contacted", "Confirmed", "Cancelled"];
+
+function initBookingsPage(){
+  renderBookingFilters();
+  renderBookingsTable();
+  document.getElementById("bookingsTableWrap").addEventListener("click", function(e){
+    var wa = e.target.closest("button[data-wa]");
+    if(wa){
+      var guest = bookingsCache.find(function(x){ return x.id === wa.dataset.wa; });
+      if(guest) whatsAppGuest(guest);
+      return;
+    }
+    var btn = e.target.closest("button[data-receipt]");
+    if(!btn) return;
+    var booking = bookingsCache.find(function(x){ return x.id === btn.dataset.receipt; });
+    if(booking) DataService.showReceipt(booking);
+  });
+}
+
+function renderBookingFilters(){
+  var options = ["All"].concat(STATUSES);
+  document.getElementById("bookingFilters").innerHTML = options.map(function(s){
+    var active = s === bookingFilter ? " admin-btn-gold" : " admin-btn-outline";
+    return '<button type="button" class="admin-btn admin-btn-sm' + active + '" onclick="setBookingFilter(\'' + s + '\')">' + s + '</button>';
+  }).join("");
+}
+function setBookingFilter(s){
+  bookingFilter = s;
+  renderBookingFilters();
+  renderBookingsTable();
+}
+
+function renderBookingsTable(){
+  var wrap = document.getElementById("bookingsTableWrap");
+  wrap.innerHTML = '<p class="admin-empty">Loading enquiries…</p>';
+  AdminData.getBookings().then(function(all){
+    bookingsCache = all;
+
+    // Older enquiries don't have an order number yet: number them once,
+    // oldest first, then redraw.
+    var missing = all.filter(function(b){ return !b.orderNo; });
+    if(missing.length && !orderBackfillTried){
+      orderBackfillTried = true;
+      DataService.assignOrderNumbers(missing).then(renderBookingsTable).catch(function(){});
+    }
+
+    var list = bookingFilter === "All" ? all : all.filter(function(b){ return b.status === bookingFilter; });
+
+    if(!all.length){
+      wrap.innerHTML = '<p class="admin-empty">No booking enquiries yet. They\'ll show up here as soon as someone submits a "Request to Book" on the site.</p>';
+      return;
+    }
+    if(!list.length){
+      wrap.innerHTML = '<p class="admin-empty">No enquiries with that status.</p>';
+      return;
+    }
+
+    wrap.innerHTML = '<table class="admin-table"><thead><tr><th>Order</th><th>Guest</th><th>Property</th><th>Dates</th><th>Guests</th><th>Total</th><th>Status</th><th>Receipt</th></tr></thead><tbody>' +
+      list.map(function(b){
+        var statusOptions = STATUSES.map(function(s){
+          return '<option value="' + s + '"' + (s === b.status ? " selected" : "") + '>' + s + '</option>';
+        }).join("");
+        return '<tr>' +
+          '<td style="white-space:nowrap;font-weight:700;">' + esc(b.orderNo || "—") + '</td>' +
+          '<td>' + esc(b.name) + '<br><span style="color:var(--text-muted);font-size:12px;">' + esc(b.phone) + '</span></td>' +
+          '<td>' + esc(b.property) + '</td>' +
+          '<td>' + adminFormatDate(b.checkin) + ' \u2192 ' + adminFormatDate(b.checkout) + '<br><span style="color:var(--text-muted);font-size:12px;">' + (b.nights||0) + ' night(s)</span></td>' +
+          '<td>' + (b.guests||"—") + '</td>' +
+          '<td>' + (b.total ? adminFormatMoney(b.total) : "—") + '</td>' +
+          '<td><select onchange="onStatusChange(\'' + esc(b.id) + '\', this.value)">' + statusOptions + '</select></td>' +
+          '<td><div class="admin-row-actions"><button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-receipt="' + esc(b.id) + '">Receipt</button><button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-wa="' + esc(b.id) + '">WhatsApp</button></div></td>' +
+        '</tr>';
+      }).join("") + '</tbody></table>';
+  }).catch(function(err){
+    wrap.innerHTML = '<p class="admin-empty">Couldn\'t load enquiries: ' + esc(err.message) + '</p>';
+  });
+}
+
+function onStatusChange(id, status){
+  AdminData.setBookingStatus(id, status).then(function(){
+    var booking = bookingsCache.find(function(x){ return x.id === id; });
+    if(booking) booking.status = status;
+    renderBookingsTable();
+    adminToast("Status updated.");
+    if(booking) syncFeedForBooking(booking, status);
+    return booking ? syncBookingBlock(booking, status) : null;
+  }).catch(function(err){
+    adminToast("Couldn't update: " + err.message);
+  });
+}
+
+// Where a booking took place (for the public "just booked" pop-up).
+function adminLocationFor(booking, props){
+  if(booking.propertyLocation) return booking.propertyLocation;
+  var prop = (props || []).find(function(p){ return p.title === booking.property; });
+  return prop && prop.location ? prop.location : "";
+}
+// Cancelled bookings leave the pop-up; every other status keeps them in it.
+// Best-effort: the status change is already saved.
+function syncFeedForBooking(booking, status){
+  AdminData.getProperties().then(function(props){
+    return AdminData.syncBookingFeed(booking, status, adminLocationFor(booking, props));
+  }).catch(function(){});
+}
+
+// A confirmed booking blocks its nights on the property so nobody else can book
+// them; cancelling (or any other status) frees them again.
+function syncBookingBlock(booking, status){
+  return AdminData.getProperties().then(function(list){
+    var prop = list.find(function(p){ return p.title === booking.property; });
+    if(!prop) return;
+    var ranges = (prop.blockedRanges || []).filter(function(r){ return r.bookingId !== booking.id; });
+    var had = (prop.blockedRanges || []).length !== ranges.length;
+    var add = status === "Confirmed" && booking.checkin && booking.checkout && booking.checkout > booking.checkin;
+    if(add){
+      var last = new Date(booking.checkout + "T00:00:00");
+      last.setDate(last.getDate() - 1);
+      var to = last.getFullYear() + "-" + String(last.getMonth() + 1).padStart(2, "0") + "-" + String(last.getDate()).padStart(2, "0");
+      ranges.push({ from: booking.checkin, to: to, note: "Booking " + (booking.orderNo || booking.id), bookingId: booking.id });
+    }
+    if(!add && !had) return;
+    prop.blockedRanges = ranges;
+    return AdminData.saveProperty(prop).then(function(){
+      adminToast(add ? "Dates blocked on " + prop.title + "." : "Dates freed on " + prop.title + ".");
+    });
+  }).catch(function(){ /* status is already saved; blocking is best-effort */ });
+}
+
+// Opens WhatsApp to the guest with the booking details filled in.
+function whatsAppGuest(b){
+  var nights = Number(b.nights || 0);
+  var lines = [
+    "Hello " + (b.name || "") + ", this is Shortlet Magnificent.",
+    b.status === "Confirmed" ? "Your booking is confirmed." : "Thank you for your booking request.",
+    "",
+    "Order: " + (b.orderNo || "—"),
+    "Property: " + (b.property || "—"),
+    "Stay: " + adminFormatDate(b.checkin) + " to " + adminFormatDate(b.checkout) + (nights ? " (" + nights + " night" + (nights > 1 ? "s" : "") + ")" : ""),
+    b.total ? "Total: " + adminFormatMoney(b.total) : "",
+    Number(b.discount) > 0 ? "Promo " + b.promo + ": -" + adminFormatMoney(b.discount) : "",
+    "",
+    b.status === "Confirmed"
+      ? "We look forward to hosting you. Message us here if you need anything before you arrive."
+      : "Reply here and we'll confirm your dates and payment."
+  ].filter(function(l, i, arr){ return l !== "" || (arr[i - 1] !== "" && i !== arr.length - 1); }).join("\n");
+  var number = adminWhatsAppNumber(b.phone);
+  window.open("https://wa.me/" + number + "?text=" + encodeURIComponent(lines), "_blank", "noopener");
+}
+
+function esc(s){
+  return String(s || "—").replace(/[&<>"']/g, function(c){
+    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+  });
+}
+
+/* ===== admin-reviews.js ===== */
+/* ==========================================================
+   ADMIN — REVIEWS PAGE
+========================================================== */
+var editingReviewId = null;
+var reviewsCache = [];
+
+function initReviewsPage(){
+  renderReviewsTable();
+  document.getElementById("addReviewBtn").addEventListener("click", function(){ openReviewModal(null); });
+  document.getElementById("reviewModalScrim").addEventListener("click", function(e){
+    if(e.target.id === "reviewModalScrim") closeReviewModal();
+  });
+  document.getElementById("reviewModalClose").addEventListener("click", closeReviewModal);
+  document.getElementById("reviewForm").addEventListener("submit", onSaveReview);
+}
+
+function renderReviewsTable(){
+  var wrap = document.getElementById("reviewsTableWrap");
+  wrap.innerHTML = '<p class="admin-empty">Loading reviews…</p>';
+  AdminData.getReviews().then(function(list){
+    reviewsCache = list;
+    if(!list.length){
+      wrap.innerHTML = '<p class="admin-empty">No reviews yet.</p>';
+      return;
+    }
+    wrap.innerHTML = '<table class="admin-table"><thead><tr><th>Guest</th><th>Rating</th><th>Review</th><th></th></tr></thead><tbody>' +
+      list.map(function(r){
+        return '<tr>' +
+          '<td>' + esc(r.name) + '<br><span style="color:var(--text-muted);font-size:12px;">' + esc(r.location) + '</span></td>' +
+          '<td>' + "★".repeat(r.rating||0) + '<span style="color:var(--border);">' + "★".repeat(5-(r.rating||0)) + '</span></td>' +
+          '<td style="max-width:320px;">' + esc(r.text) + '</td>' +
+          '<td><div class="admin-row-actions">' +
+            '<button class="admin-btn admin-btn-outline admin-btn-sm" onclick="openReviewModal(\'' + r.id + '\')">Edit</button>' +
+            '<button class="admin-btn admin-btn-danger admin-btn-sm" onclick="onDeleteReview(\'' + r.id + '\')">Delete</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join("") + '</tbody></table>';
+  }).catch(function(err){
+    wrap.innerHTML = '<p class="admin-empty">Couldn\'t load reviews: ' + esc(err.message) + '</p>';
+  });
+}
+
+function openReviewModal(id){
+  editingReviewId = id;
+  var r = id ? reviewsCache.find(function(x){ return x.id === id; }) : null;
+  document.getElementById("reviewModalTitle").textContent = r ? "Edit review" : "Add review";
+  var f = document.getElementById("reviewForm");
+  f.name.value = r ? r.name : "";
+  f.location.value = r ? r.location : "";
+  f.rating.value = r ? r.rating : 5;
+  f.text.value = r ? r.text : "";
+  document.getElementById("reviewModalScrim").classList.add("show");
+}
+function closeReviewModal(){ document.getElementById("reviewModalScrim").classList.remove("show"); }
+
+function onSaveReview(e){
+  e.preventDefault();
+  var f = e.target;
+  var review = {
+    id: editingReviewId,
+    name: f.name.value.trim(),
+    location: f.location.value.trim(),
+    rating: Number(f.rating.value || 5),
+    text: f.text.value.trim()
+  };
+  if(!review.name || !review.text){
+    adminToast("Please add a guest name and review text.");
+    return;
+  }
+  AdminData.saveReview(review).then(function(){
+    closeReviewModal();
+    renderReviewsTable();
+    adminToast(editingReviewId ? "Review updated." : "Review added.");
+  }).catch(function(err){
+    adminToast("Couldn't save: " + err.message);
+  });
+}
+
+function onDeleteReview(id){
+  if(!confirm("Delete this review?")) return;
+  AdminData.deleteReview(id).then(function(){
+    renderReviewsTable();
+    adminToast("Review deleted.");
+  }).catch(function(err){
+    adminToast("Couldn't delete: " + err.message);
+  });
+}
+
+function esc(s){
+  return String(s || "").replace(/[&<>"']/g, function(c){
+    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+  });
+}
+
+/* ===== admin-gallery.js ===== */
+/* ==========================================================
+   ADMIN — GALLERY PAGE
+   Add / caption / delete the photos & videos shown on the public
+   Gallery page. Stored in the Firestore "gallery" collection.
+
+   Photos picked from the phone are resized in the browser, then uploaded to
+   the photo host (Cloudinary from Settings, else Firebase Storage). If neither
+   is available they are saved compressed in Firestore instead, so uploading
+   always works. Videos are added by link (a direct .mp4 / .webm URL).
+========================================================== */
+var galleryCache = [];
+var pendingFiles = [];
+
+// Firestore documents max out at 1 MiB; stay comfortably under it.
+var MAX_DATA_URL_CHARS = 850000;
+
+// First time: brings in the pictures that were showing on the Gallery page, so
+// they can be captioned and deleted here. Then shows the list.
+function openGallerySection(){
+  var grid = document.getElementById("galleryGrid");
+  grid.innerHTML = '<p class="admin-empty" style="grid-column:1/-1;">Loading gallery…</p>';
+  DataService.seedGalleryFromProperties().then(renderGallery).catch(function(err){
+    grid.innerHTML = '<p class="admin-empty" style="grid-column:1/-1;">Couldn\'t load the gallery: ' + adminEsc(err.message) + '</p>';
+  });
+}
+
+function initGalleryPage(){
+  openGallerySection();
+
+  document.getElementById("addGalleryBtn").addEventListener("click", openGalleryModal);
+  document.getElementById("galleryModalClose").addEventListener("click", closeGalleryModal);
+  document.getElementById("galleryModalScrim").addEventListener("click", function(e){
+    if(e.target.id === "galleryModalScrim") closeGalleryModal();
+  });
+  document.getElementById("galleryFiles").addEventListener("change", function(){
+    pendingFiles = Array.prototype.slice.call(this.files || []);
+    document.getElementById("galleryDropLabel").textContent = pendingFiles.length
+      ? pendingFiles.length + " photo" + (pendingFiles.length > 1 ? "s" : "") + " selected"
+      : "Tap to choose photos";
+  });
+  document.getElementById("galleryForm").addEventListener("submit", onSaveGallery);
+
+  // Edit caption / delete (event delegation)
+  document.getElementById("galleryGrid").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-action]");
+    if(!btn) return;
+    var id = btn.dataset.id;
+    if(btn.dataset.action === "delete") onDeleteGalleryItem(id);
+    if(btn.dataset.action === "caption") onEditCaption(id);
+  });
+}
+
+function renderGallery(){
+  var grid = document.getElementById("galleryGrid");
+  var count = document.getElementById("galleryCount");
+  grid.innerHTML = '<p class="admin-empty" style="grid-column:1/-1;">Loading gallery…</p>';
+  AdminData.getGallery().then(function(list){
+    galleryCache = list;
+    count.textContent = list.length ? list.length + " item" + (list.length > 1 ? "s" : "") : "";
+    if(!list.length){
+      grid.innerHTML = '<p class="admin-empty" style="grid-column:1/-1;">No pictures yet. Tap “+ Add to gallery” to add one.</p>';
+      return;
+    }
+    grid.innerHTML = list.map(function(item){
+      var isVideo = item.type === "video";
+      var media = isVideo
+        ? '<video src="' + adminEsc(item.src) + '" muted preload="metadata"></video>'
+        : '<img src="' + adminEsc(item.src) + '" alt="' + adminEsc(item.title || "") + '" loading="lazy">';
+      return '<div class="admin-gallery-item">' +
+        '<div class="admin-gallery-thumb">' + media + '<span class="admin-gallery-type">' + (isVideo ? "Video" : "Photo") + '</span></div>' +
+        '<div class="admin-gallery-meta">' +
+          '<div class="admin-gallery-caption' + (item.title ? '' : ' empty') + '">' + (item.title ? adminEsc(item.title) : "No caption") + '</div>' +
+          '<div class="admin-row-actions">' +
+            '<button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-action="caption" data-id="' + adminEsc(item.id) + '">Caption</button>' +
+            '<button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-action="delete" data-id="' + adminEsc(item.id) + '">Delete</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }).catch(function(err){
+    grid.innerHTML = '<p class="admin-empty" style="grid-column:1/-1;">Couldn\'t load the gallery: ' + adminEsc(err.message)+ '</p>';
+  });
+}
+
+function openGalleryModal(){
+  pendingFiles = [];
+  document.getElementById("galleryForm").reset();
+  document.getElementById("galleryDropLabel").textContent = "Tap to choose photos";
+  document.getElementById("galleryStatus").textContent = "";
+  document.getElementById("gallerySaveBtn").disabled = false;
+  document.getElementById("galleryModalScrim").classList.add("show");
+}
+function closeGalleryModal(){
+  document.getElementById("galleryModalScrim").classList.remove("show");
+}
+
+/* ---------- Resize + compress an image file to a JPEG data URL ---------- */
+function compressImage(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onerror = function(){ reject(new Error("Couldn't read " + file.name)); };
+    reader.onload = function(){
+      var img = new Image();
+      img.onerror = function(){ reject(new Error(file.name + " isn't an image this browser can open.")); };
+      img.onload = function(){
+        var maxDim = 1600;
+        for(var attempt = 0; attempt < 5; attempt++){
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          var ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          for(var q = 0.82; q >= 0.5; q -= 0.1){
+            var out = canvas.toDataURL("image/jpeg", q);
+            if(out.length <= MAX_DATA_URL_CHARS){ resolve(out); return; }
+          }
+          maxDim = Math.round(maxDim * 0.75); // still too big -> shrink and retry
+        }
+        reject(new Error(file.name + " is too large even after compressing."));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function onSaveGallery(e){
+  e.preventDefault();
+  var f = e.target;
+  var caption = f.caption.value.trim();
+  var url = f.url.value.trim();
+  var status = document.getElementById("galleryStatus");
+  var saveBtn = document.getElementById("gallerySaveBtn");
+
+  if(!pendingFiles.length && !url){
+    adminToast("Choose a photo or paste a link first.");
+    return;
+  }
+  saveBtn.disabled = true;
+
+  var added = 0, failed = [];
+  var queue = pendingFiles.map(function(file){ return { file: file }; });
+  if(url) queue.push({ url: url });
+
+  // One at a time so progress is clear and a single bad file doesn't sink the batch.
+  queue.reduce(function(chain, job, i){
+    return chain.then(function(){
+      status.textContent = "Saving " + (i + 1) + " of " + queue.length + "…";
+      var prepare = job.file
+        ? adminUploadPhoto(job.file).then(function(url){ return { src: url, type: "image" }; }).catch(function(){
+            // No photo host available: keep the compressed photo in Firestore instead.
+            return compressImage(job.file).then(function(dataUrl){ return { src: dataUrl, type: "image" }; });
+          })
+        : Promise.resolve({ src: job.url, type: /\.(mp4|webm|mov)(\?.*)?$/i.test(job.url) ? "video" : "image" });
+      return prepare.then(function(media){
+        return AdminData.addGalleryItem({ src: media.src, type: media.type, title: caption });
+      }).then(function(){ added++; }).catch(function(err){
+        failed.push((job.file ? job.file.name : "link") + " — " + err.message);
+      });
+    });
+  }, Promise.resolve()).then(function(){
+    saveBtn.disabled = false;
+    if(failed.length){
+      status.textContent = (added ? added + " saved. " : "") + "Couldn't save: " + failed.join("; ");
+    } else {
+      closeGalleryModal();
+    }
+    if(added){
+      adminToast(added + " added to the gallery.");
+      renderGallery();
+    }
+  });
+}
+
+function onEditCaption(id){
+  var item = galleryCache.find(function(x){ return x.id === id; });
+  if(!item) return;
+  var next = prompt("Caption for this item:", item.title || "");
+  if(next === null) return;
+  AdminData.updateGalleryItem(id, { title: next.trim() }).then(function(){
+    adminToast("Caption updated.");
+    renderGallery();
+  }).catch(function(err){ adminToast("Couldn't update: " + err.message); });
+}
+
+function onDeleteGalleryItem(id){
+  if(!confirm("Remove this from the gallery?")) return;
+  AdminData.deleteGalleryItem(id).then(function(){
+    adminToast("Removed.");
+    renderGallery();
+  }).catch(function(err){ adminToast("Couldn't delete: " + err.message); });
+}
+
+/* ===== admin-promos.js ===== */
+/* ==========================================================
+   ADMIN — PROMO CODES
+   Codes guests type into the booking form. Stored in Firestore
+   promos/<CODE>. Percent or fixed-amount discounts, with an optional
+   minimum stay, expiry date and use limit.
+========================================================== */
+var promosCache = [];
+var editingPromoCode = null;
+
+function initPromosPage(){
+  document.getElementById("addPromoBtn").addEventListener("click", function(){ openPromoModal(null); });
+  document.getElementById("promoModalClose").addEventListener("click", closePromoModal);
+  document.getElementById("promoModalScrim").addEventListener("click", function(e){
+    if(e.target.id === "promoModalScrim") closePromoModal();
+  });
+  document.getElementById("promoForm").addEventListener("submit", onSavePromo);
+  document.getElementById("promoForm").type.addEventListener("change", syncPromoValueLabel);
+  document.getElementById("promosTableWrap").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-action]");
+    if(!btn) return;
+    var code = btn.dataset.code;
+    if(btn.dataset.action === "edit") openPromoModal(code);
+    if(btn.dataset.action === "toggle") togglePromo(code);
+    if(btn.dataset.action === "delete") deletePromoCode(code);
+  });
+  renderPromosTable();
+}
+
+function promoStatus(p){
+  if(p.active === false) return "Off";
+  if(p.expiresAt && new Date(p.expiresAt + "T23:59:59") < new Date()) return "Expired";
+  if(p.maxUses && (p.usedCount || 0) >= p.maxUses) return "Used up";
+  return "Active";
+}
+
+function renderPromosTable(){
+  var wrap = document.getElementById("promosTableWrap");
+  wrap.innerHTML = '<p class="admin-empty">Loading promo codes…</p>';
+  AdminData.getPromos().then(function(list){
+    promosCache = list.sort(function(a, b){ return String(a.code).localeCompare(String(b.code)); });
+    if(!list.length){
+      wrap.innerHTML = '<p class="admin-empty">No promo codes yet. Click “+ New promo code” to create one.</p>';
+      return;
+    }
+    wrap.innerHTML = list.map(function(p){
+      var off = p.type === "fixed" ? adminFormatMoney(p.value) + " off" : Number(p.value) + "% off";
+      var bits = [off];
+      if(p.minNights) bits.push("Min " + p.minNights + " night" + (p.minNights > 1 ? "s" : ""));
+      if(p.expiresAt) bits.push("Until " + adminFormatDate(p.expiresAt));
+      var status = promoStatus(p);
+      var badge = status === "Active" ? "available" : (status === "Off" ? "unavailable" : "booked");
+      var code = adminEsc(p.code);
+      return '<div class="promo-card">' +
+        '<div class="promo-card-top"><strong>' + code + '</strong><span class="admin-badge admin-badge-' + badge + '">' + status + '</span></div>' +
+        '<p>' + adminEsc(bits.join(" · ")) + '<br>Used ' + (p.usedCount || 0) + (p.maxUses ? " of " + p.maxUses : "") + ' time' + ((p.usedCount || 0) === 1 && !p.maxUses ? "" : "s") + '</p>' +
+        '<div class="admin-row-actions">' +
+          '<button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-action="edit" data-code="' + code + '">Edit</button>' +
+          '<button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-action="toggle" data-code="' + code + '">' + (p.active === false ? "Turn on" : "Turn off") + '</button>' +
+          '<button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-action="delete" data-code="' + code + '">Delete</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }).catch(function(err){
+    wrap.innerHTML = '<p class="admin-empty">Couldn\'t load promo codes: ' + adminEsc(err.message) + '</p>';
+  });
+}
+
+function syncPromoValueLabel(){
+  var f = document.getElementById("promoForm");
+  document.getElementById("promoValueLabel").textContent = f.type.value === "fixed" ? "Amount off (₦)" : "Percent off (%)";
+}
+
+function openPromoModal(code){
+  editingPromoCode = code;
+  var p = code ? promosCache.find(function(x){ return x.code === code; }) : null;
+  var f = document.getElementById("promoForm");
+  document.getElementById("promoModalTitle").textContent = p ? "Edit promo code" : "New promo code";
+  f.code.value = p ? p.code : "";
+  f.code.disabled = !!p;
+  f.type.value = p ? (p.type || "percent") : "percent";
+  f.value.value = p ? p.value : "";
+  f.minNights.value = p && p.minNights ? p.minNights : "";
+  f.expiresAt.value = p && p.expiresAt ? p.expiresAt : "";
+  f.maxUses.value = p && p.maxUses ? p.maxUses : "";
+  f.active.checked = p ? p.active !== false : true;
+  syncPromoValueLabel();
+  document.getElementById("promoModalScrim").classList.add("show");
+}
+function closePromoModal(){ document.getElementById("promoModalScrim").classList.remove("show"); }
+
+function onSavePromo(e){
+  e.preventDefault();
+  var f = e.target;
+  var code = f.code.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
+  var value = Number(f.value.value || 0);
+  if(!code){ adminToast("Enter a code using letters and numbers."); return; }
+  if(!(value > 0)){ adminToast("Enter how much the code takes off."); return; }
+  if(f.type.value === "percent" && value > 100){ adminToast("A percent discount can't be more than 100."); return; }
+  if(!editingPromoCode && promosCache.some(function(x){ return x.code === code; })){ adminToast("That code already exists — edit it instead."); return; }
+
+  var promo = {
+    code: code,
+    type: f.type.value,
+    value: value,
+    minNights: Number(f.minNights.value || 0),
+    expiresAt: f.expiresAt.value || "",
+    maxUses: Number(f.maxUses.value || 0),
+    active: f.active.checked
+  };
+  if(!editingPromoCode) promo.usedCount = 0;   // an edit keeps the existing count
+
+  var btn = f.querySelector("button[type=submit]");
+  btn.disabled = true;
+  AdminData.savePromo(promo).then(function(){
+    closePromoModal();
+    adminToast(editingPromoCode ? "Promo code updated." : "Promo code created.");
+    renderPromosTable();
+  }).catch(function(err){
+    adminToast("Couldn't save: " + err.message);
+  }).finally(function(){ btn.disabled = false; });
+}
+
+function togglePromo(code){
+  var p = promosCache.find(function(x){ return x.code === code; });
+  if(!p) return;
+  AdminData.savePromo({ code: code, active: p.active === false }).then(function(){
+    adminToast(p.active === false ? "Promo code turned on." : "Promo code turned off.");
+    renderPromosTable();
+  }).catch(function(err){ adminToast("Couldn't update: " + err.message); });
+}
+
+function deletePromoCode(code){
+  if(!confirm("Delete the promo code " + code + "?")) return;
+  AdminData.deletePromo(code).then(function(){
+    adminToast("Deleted.");
+    renderPromosTable();
+  }).catch(function(err){ adminToast("Couldn't delete: " + err.message); });
+}
+
+/* ===== admin-content.js ===== */
+/* ==========================================================
+   ADMIN — CONTENT
+   Edit the wording of the public site:
+     FAQ, Privacy Policy, Terms, About Us, and the site's own text
+     (home banner, footer, ...). Saved in Firestore content/<id>.
+   Nothing saved = the site keeps its original wording.
+========================================================== */
+var contentTab = "faq";
+var faqDraft = [];
+var contentReady = {};
+
+function initContentPage(){
+  document.getElementById("contentTabs").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-tab]");
+    if(btn) showContentTab(btn.dataset.tab);
+  });
+
+  // FAQ
+  document.getElementById("addFaqBtn").addEventListener("click", function(){
+    faqDraft.push({ q: "", a: "" });
+    renderFaqEditor();
+    var last = document.querySelector("#faqEditor .faq-edit:last-child input");
+    if(last) last.focus();
+  });
+  document.getElementById("saveFaqBtn").addEventListener("click", saveFaq);
+  document.getElementById("resetFaqBtn").addEventListener("click", function(){ resetContent("faq"); });
+  document.getElementById("faqEditor").addEventListener("input", function(e){
+    var card = e.target.closest(".faq-edit");
+    if(!card) return;
+    var i = Number(card.dataset.i);
+    if(e.target.name === "q") faqDraft[i].q = e.target.value;
+    if(e.target.name === "a") faqDraft[i].a = e.target.value;
+  });
+  document.getElementById("faqEditor").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    var i = Number(btn.closest(".faq-edit").dataset.i);
+    if(btn.dataset.act === "up" && i > 0){ var t = faqDraft[i - 1]; faqDraft[i - 1] = faqDraft[i]; faqDraft[i] = t; }
+    if(btn.dataset.act === "down" && i < faqDraft.length - 1){ var u = faqDraft[i + 1]; faqDraft[i + 1] = faqDraft[i]; faqDraft[i] = u; }
+    if(btn.dataset.act === "del"){ faqDraft.splice(i, 1); }
+    renderFaqEditor();
+  });
+
+  // Privacy / Terms / About
+  document.getElementById("pageBody").addEventListener("input", renderPagePreview);
+  document.getElementById("savePageBtn").addEventListener("click", savePage);
+  document.getElementById("resetPageBtn").addEventListener("click", function(){ resetContent(contentTab); });
+
+  // Site text
+  document.getElementById("saveSiteTextBtn").addEventListener("click", saveSiteText);
+  document.getElementById("resetSiteTextBtn").addEventListener("click", function(){ resetContent("site"); });
+
+  showContentTab("faq");
+}
+
+function showContentTab(tab){
+  contentTab = tab;
+  document.querySelectorAll("#contentTabs button").forEach(function(b){
+    var on = b.dataset.tab === tab;
+    b.classList.toggle("admin-btn-gold", on);
+    b.classList.toggle("admin-btn-outline", !on);
+  });
+  var isPage = tab === "privacy" || tab === "terms" || tab === "about";
+  document.getElementById("panelFaq").hidden = tab !== "faq";
+  document.getElementById("panelPage").hidden = !isPage;
+  document.getElementById("panelSite").hidden = tab !== "site";
+  if(tab === "faq") loadFaq();
+  if(isPage) loadPage(tab);
+  if(tab === "site") loadSiteText();
+}
+
+/* ---------- FAQ ---------- */
+function loadFaq(){
+  DataService.getContent("faq").then(function(c){
+    var items = c && Array.isArray(c.items) && c.items.length ? c.items : CONTENT_DEFAULTS.faq.items;
+    faqDraft = items.map(function(x){ return { q: x.q, a: x.a }; });
+    renderFaqEditor();
+  });
+}
+function renderFaqEditor(){
+  var box = document.getElementById("faqEditor");
+  if(!faqDraft.length){ box.innerHTML = '<p class="admin-empty">No questions yet. Click “+ Add question”.</p>'; return; }
+  box.innerHTML = faqDraft.map(function(item, i){
+    return '<div class="faq-edit" data-i="' + i + '">' +
+      '<div class="faq-edit-head"><strong>Question ' + (i + 1) + '</strong>' +
+        '<span class="admin-row-actions">' +
+          '<button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-act="up"' + (i === 0 ? " disabled" : "") + ' aria-label="Move up">↑</button>' +
+          '<button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-act="down"' + (i === faqDraft.length - 1 ? " disabled" : "") + ' aria-label="Move down">↓</button>' +
+          '<button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-act="del">Delete</button>' +
+        '</span></div>' +
+      '<div class="admin-field"><input type="text" name="q" placeholder="Question" value="' + adminEsc(item.q) + '"></div>' +
+      '<div class="admin-field" style="margin-bottom:0;"><textarea name="a" rows="3" placeholder="Answer">' + adminEsc(item.a) + '</textarea></div>' +
+    '</div>';
+  }).join("");
+}
+function saveFaq(){
+  var items = faqDraft.map(function(x){ return { q: x.q.trim(), a: x.a.trim() }; }).filter(function(x){ return x.q && x.a; });
+  if(!items.length){ adminToast("Add at least one question with an answer."); return; }
+  DataService.saveContent("faq", { items: items }).then(function(){
+    faqDraft = items;
+    renderFaqEditor();
+    adminToast("FAQ saved.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ---------- Privacy / Terms / About ---------- */
+function loadPage(id){
+  var def = CONTENT_DEFAULTS[id];
+  document.getElementById("pageBody").value = "";
+  DataService.getContent(id).then(function(c){
+    if(contentTab !== id) return;                       // switched tab meanwhile
+    var doc = c && c.body ? c : def;
+    document.getElementById("pageTitle").value = doc.title || def.title;
+    document.getElementById("pageBody").value = doc.body || "";
+    renderPagePreview();
+  });
+}
+function renderPagePreview(){
+  document.getElementById("pagePreview").innerHTML = DataService.renderRichText(document.getElementById("pageBody").value);
+}
+function monthYear(){
+  return new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
+function savePage(){
+  var id = contentTab;
+  var title = document.getElementById("pageTitle").value.trim();
+  var body = document.getElementById("pageBody").value.trim();
+  if(!body){ adminToast("The page can't be empty."); return; }
+  var doc = { title: title || CONTENT_DEFAULTS[id].title, body: body };
+  if(id !== "about") doc.updated = monthYear();       // "Last updated: September 2026"
+  DataService.saveContent(id, doc).then(function(){
+    adminToast("Saved. The page is updated on the site.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ---------- Site text ---------- */
+function loadSiteText(){
+  DataService.getContent("site").then(function(c){
+    var saved = (c && c.texts) || {};
+    var groups = {};
+    SITE_TEXT_FIELDS.forEach(function(f){ (groups[f.group] = groups[f.group] || []).push(f); });
+    document.getElementById("siteTextEditor").innerHTML = Object.keys(groups).map(function(g){
+      return '<h3 class="content-group">' + adminEsc(g) + '</h3>' + groups[g].map(function(f){
+        var val = typeof saved[f.key] === "string" && saved[f.key].trim() ? saved[f.key] : f.default;
+        var control = f.multiline
+          ? '<textarea data-key="' + f.key + '" rows="2">' + adminEsc(val) + '</textarea>'
+          : '<input type="text" data-key="' + f.key + '" value="' + adminEsc(val) + '">';
+        return '<div class="admin-field"><label>' + adminEsc(f.label) + '</label>' + control + '</div>';
+      }).join("");
+    }).join("");
+  });
+}
+function saveSiteText(){
+  var texts = {};
+  SITE_TEXT_FIELDS.forEach(function(f){
+    var el = document.querySelector('#siteTextEditor [data-key="' + f.key + '"]');
+    if(!el) return;
+    var v = el.value.trim();
+    if(v && v !== f.default) texts[f.key] = v;     // only what differs from the original wording
+  });
+  DataService.saveContent("site", { texts: texts }).then(function(){
+    adminToast("Saved. The site shows the new wording.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ---------- Put the original wording back ---------- */
+function resetContent(id){
+  if(!confirm("Go back to the original wording? Your edits will be removed.")) return;
+  DataService.deleteContent(id).then(function(){
+    adminToast("Original wording restored.");
+    showContentTab(contentTab);
+  }).catch(function(err){ adminToast("Couldn't restore: " + err.message); });
+}
+
+/* ===== admin-users.js ===== */
+/* ==========================================================
+   ADMIN — USERS PAGE
+   Lists guests from the Firestore "users" collection. A guest's
+   record is created when they sign up and refreshed when they
+   next log in (firebase-init.js), so guests who registered before
+   this feature existed appear once they log in again.
+========================================================== */
+var usersCache = [];
+var bookingCountByUid = {};
+var adminEmailSet = {};
+
+function initUsersPage(){
+  document.getElementById("userSearch").addEventListener("input", renderUsersTable);
+  document.getElementById("usersTableWrap").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-notify]");
+    if(!btn) return;
+    pendingNotifyTo = btn.dataset.notify;
+    location.hash = "#notifications";
+  });
+  loadUsers();
+}
+
+function loadUsers(){
+  var wrap = document.getElementById("usersTableWrap");
+  wrap.innerHTML = '<p class="admin-empty">Loading users…</p>';
+  bookingCountByUid = {};
+
+  Promise.all([
+    AdminData.getUsers(),
+    AdminData.getBookings().catch(function(){ return []; }),
+    AdminData.getAdmins().catch(function(){ return []; })
+  ]).then(function(res){
+    usersCache = res[0].sort(function(a, b){
+      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    });
+    res[1].forEach(function(b){ if(b.uid) bookingCountByUid[b.uid] = (bookingCountByUid[b.uid] || 0) + 1; });
+    (window.ADMIN_EMAILS || []).forEach(function(e){ adminEmailSet[e] = true; });
+    res[2].forEach(function(a){ adminEmailSet[String(a.email || a.id).toLowerCase()] = true; });
+
+    renderUserStats();
+    renderUsersTable();
+  }).catch(function(err){
+    wrap.innerHTML = '<p class="admin-empty">Couldn\'t load users: ' + adminEsc(err.message)+ '</p>';
+  });
+}
+
+function renderUserStats(){
+  var monthAgo = Date.now() - 30 * 24 * 3600 * 1000;
+  var recent = usersCache.filter(function(u){ return u.createdAt && new Date(u.createdAt).getTime() >= monthAgo; }).length;
+  var withBookings = usersCache.filter(function(u){ return bookingCountByUid[u.uid || u.id]; }).length;
+  document.getElementById("userStats").innerHTML =
+    '<div class="admin-stat-card"><div class="admin-stat-num">' + usersCache.length + '</div><div class="admin-stat-label">Total users</div></div>' +
+    '<div class="admin-stat-card"><div class="admin-stat-num">' + recent + '</div><div class="admin-stat-label">Joined in last 30 days</div></div>' +
+    '<div class="admin-stat-card"><div class="admin-stat-num">' + withBookings + '</div><div class="admin-stat-label">Have made an enquiry</div></div>';
+}
+
+function renderUsersTable(){
+  var wrap = document.getElementById("usersTableWrap");
+  var term = document.getElementById("userSearch").value.trim().toLowerCase();
+  var list = usersCache.filter(function(u){
+    return !term || (u.name || "").toLowerCase().indexOf(term) !== -1 || (u.email || "").toLowerCase().indexOf(term) !== -1;
+  });
+
+  if(!usersCache.length){
+    wrap.innerHTML = '<p class="admin-empty">No users yet. Guests appear here after they create an account or log in.</p>';
+    return;
+  }
+  if(!list.length){
+    wrap.innerHTML = '<p class="admin-empty">No one matches “' + adminEsc(term) + '”.</p>';
+    return;
+  }
+  wrap.innerHTML = '<table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Joined</th><th>Last active</th><th>Enquiries</th><th></th></tr></thead><tbody>' +
+    list.map(function(u){
+      var email = (u.email || "").toLowerCase();
+      var badge = adminEmailSet[email] ? '<span class="admin-inline-badge">Admin</span>' : "";
+      return '<tr>' +
+        '<td><strong>' + adminEsc(u.name || "—") + '</strong>' + badge + '</td>' +
+        '<td>' + adminEsc(u.email || "—") + '</td>' +
+        '<td>' + adminFormatDate(u.createdAt) + '</td>' +
+        '<td>' + adminFormatDate(u.lastActiveAt) + '</td>' +
+        '<td>' + (bookingCountByUid[u.uid || u.id] || 0) + '</td>' +
+        '<td>' + (u.email ? '<button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-notify="' + adminEsc(u.email) + '">Notify</button>' : '') + '</td>' +
+      '</tr>';
+    }).join("") + '</tbody></table>';
+}
+
+/* ===== admin-settings.js ===== */
+/* ==========================================================
+   ADMIN — SETTINGS PAGE
+   1) Contact details shown across the public site (Firestore
+      settings/site)
+   2) Who else can use this admin panel (Firestore admins/<email>)
+   3) Your own account (change password, reset link)
+========================================================== */
+function initSettingsPage(){
+  var me = AdminAuth.currentUser();
+
+  /* ---------- Contact details ---------- */
+  var form = document.getElementById("contactForm");
+  AdminData.getSettings().then(function(s){
+    form.phone.value = s.phone || "";
+    form.whatsapp.value = s.whatsapp || "";
+    form.email.value = s.email || "";
+  });
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var phone = form.phone.value.replace(/[\s()-]/g, "");
+    var whatsapp = form.whatsapp.value.replace(/\D/g, "");
+    var email = form.email.value.trim();
+
+    if(!/^\+\d{8,15}$/.test(phone)){
+      adminToast("Phone should start with + and the country code, e.g. +2348142230897.");
+      return;
+    }
+    if(!whatsapp) whatsapp = phone.replace(/\D/g, "");
+    if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+      adminToast("That email address doesn't look right.");
+      return;
+    }
+    var btn = form.querySelector("button[type=submit]");
+    btn.disabled = true;
+    AdminData.saveSettings({ phone: phone, whatsapp: whatsapp, email: email, updatedAt: new Date().toISOString() }).then(function(){
+      form.phone.value = phone;
+      form.whatsapp.value = whatsapp;
+      adminToast("Contact details saved. The website updates on next load.");
+    }).catch(function(err){
+      adminToast("Couldn't save: " + err.message);
+    }).finally(function(){ btn.disabled = false; });
+  });
+
+  /* ---------- "Just booked" pop-up ---------- */
+  var popupToggle = document.getElementById("bookingPopupToggle");
+  AdminData.getSettings().then(function(s){ popupToggle.checked = s.bookingPopup !== false; });
+  document.getElementById("savePopupBtn").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true;
+    AdminData.saveSettings({ bookingPopup: popupToggle.checked }).then(function(){
+      adminToast(popupToggle.checked ? "The pop-up is on." : "The pop-up is off.");
+    }).catch(function(err){ adminToast("Couldn't save: " + err.message); })
+      .finally(function(){ btn.disabled = false; });
+  });
+  document.getElementById("rebuildFeedBtn").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true;
+    Promise.all([AdminData.getBookings(), AdminData.getProperties()]).then(function(r){
+      return AdminData.rebuildBookingFeed(r[0], function(b){ return adminLocationFor(b, r[1]); });
+    }).then(function(n){
+      adminToast(n ? "Added your latest " + n + " booking(s) to the pop-up." : "No bookings to add yet.");
+    }).catch(function(err){ adminToast("Couldn't add: " + err.message); })
+      .finally(function(){ btn.disabled = false; });
+  });
+
+  /* ---------- Photo uploads ---------- */
+  var photoForm = document.getElementById("photoHostForm");
+  AdminData.getSettings().then(function(s){
+    photoForm.cloudinaryCloud.value = s.cloudinaryCloud || "";
+    photoForm.cloudinaryPreset.value = s.cloudinaryPreset || "";
+  });
+  photoForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var cloud = photoForm.cloudinaryCloud.value.trim();
+    var preset = photoForm.cloudinaryPreset.value.trim();
+    if(!!cloud !== !!preset){ adminToast("Fill in both the cloud name and the upload preset, or leave both empty."); return; }
+    var btn = photoForm.querySelector("button[type=submit]");
+    btn.disabled = true;
+    AdminData.saveSettings({ cloudinaryCloud: cloud, cloudinaryPreset: preset }).then(function(){
+      adminResetUploadConfig();
+      adminToast("Photo upload settings saved.");
+    }).catch(function(err){
+      adminToast("Couldn't save: " + err.message);
+    }).finally(function(){ btn.disabled = false; });
+  });
+
+  /* ---------- Admin access ---------- */
+  renderAdmins();
+  document.getElementById("adminAddForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var input = document.getElementById("newAdminEmail");
+    var email = input.value.trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ adminToast("Enter a valid email address."); return; }
+    AdminData.addAdmin(email, me && me.email).then(function(){
+      input.value = "";
+      adminToast(email + " can now sign in to the admin panel.");
+      renderAdmins();
+    }).catch(function(err){ adminToast("Couldn't add: " + err.message); });
+  });
+  document.getElementById("adminList").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-remove]");
+    if(!btn) return;
+    var email = btn.dataset.remove;
+    if(!confirm("Remove admin access for " + email + "?")) return;
+    AdminData.removeAdmin(email).then(function(){
+      adminToast("Removed.");
+      renderAdmins();
+    }).catch(function(err){ adminToast("Couldn't remove: " + err.message); });
+  });
+
+  /* ---------- Change password ---------- */
+  var pwForm = document.getElementById("passwordForm");
+  pwForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var current = pwForm.currentPassword.value;
+    var next = pwForm.newPassword.value;
+    var again = pwForm.confirmPassword.value;
+    if(!current || !next){ adminToast("Fill in your current and new password."); return; }
+    if(next.length < 8){ adminToast("The new password needs at least 8 characters."); return; }
+    if(next !== again){ adminToast("The two new passwords don't match."); return; }
+    if(next === current){ adminToast("Pick a password different from the current one."); return; }
+    var btn = pwForm.querySelector("button[type=submit]");
+    btn.disabled = true;
+    AdminAuth.changePassword(current, next).then(function(){
+      pwForm.reset();
+      adminToast("Password changed. Use it next time you sign in.");
+    }).catch(function(err){
+      var code = (err && err.code) || "";
+      if(code === "auth/wrong-password" || code === "auth/invalid-credential") adminToast("Your current password is wrong.");
+      else if(code === "auth/weak-password") adminToast("That new password is too weak. Try a longer one.");
+      else if(code === "auth/too-many-requests") adminToast("Too many tries. Wait a little and try again.");
+      else adminToast("Couldn't change it: " + err.message);
+    }).finally(function(){ btn.disabled = false; });
+  });
+
+  /* ---------- Account ---------- */
+  document.getElementById("accountEmail").textContent = me ? me.email : "";
+  document.getElementById("resetPwBtn").addEventListener("click", function(){
+    if(!me || !me.email) return;
+    AdminAuth.sendPasswordReset(me.email).then(function(){
+      adminToast("Password reset link sent to " + me.email + ".");
+    }).catch(function(err){ adminToast("Couldn't send: " + err.message); });
+  });
+}
+
+function renderAdmins(){
+  var list = document.getElementById("adminList");
+  var me = AdminAuth.currentUser();
+  var myEmail = me && me.email ? me.email.toLowerCase() : "";
+  var owners = (window.ADMIN_EMAILS || []);
+  list.innerHTML = '<p class="admin-empty" style="padding:14px;">Loading…</p>';
+
+  AdminData.getAdmins().catch(function(){ return []; }).then(function(extra){
+    var rows = owners.map(function(e){
+      return '<div class="admin-list-row"><span>' + adminEsc(e) + '<span class="admin-inline-badge">Owner</span></span></div>';
+    });
+    extra.forEach(function(a){
+      var email = String(a.email || a.id).toLowerCase();
+      if(owners.indexOf(email) !== -1) return;
+      rows.push('<div class="admin-list-row"><span>' + adminEsc(email) + (email === myEmail ? '<span class="admin-inline-badge">You</span>' : '') + '</span>' +
+        (email === myEmail ? '' : '<button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-remove="' + adminEsc(email) + '">Remove</button>') +
+      '</div>');
+    });
+    list.innerHTML = rows.join("");
+  });
+}
+
+/* ===== admin-homepage.js ===== */
+/* ==========================================================
+   ADMIN — HOME PAGE SECTIONS
+   Popular locations, Browse by type, Why choose us.
+   Saved in Firestore content/locations, content/categories and
+   content/why. Nothing saved = the site keeps its original list.
+   (LOCATIONS, CATEGORIES, WHY_DEFAULTS, ICON_LIBRARY, iconSVG and
+   safeImgUrl come from script.js.)
+========================================================== */
+var homeTab = "hero";
+var hpDraft = {
+  hero: [], locations: [], styles: [],
+  why: { title: "", items: [] },
+  amenities: { title: "", subtitle: "", items: [] },
+  trust: { items: [], stats: [] }
+};
+var HP_BOX = { hero: "hpHeroBox", locations: "hpLocationsBox", styles: "hpStylesBox", why: "hpWhyBox", amenities: "hpAmenitiesBox", trust: "hpTrustBox", stats: "hpStatsBox" };
+var HP_PANEL = { hero: "panelHpHero", locations: "panelHpLocations", styles: "panelHpStyles", why: "panelHpWhy", amenities: "panelHpAmenities", trust: "panelHpTrust" };
+var HP_CONTENT_ID = { hero: "hero", locations: "locations", styles: "categories", why: "why", amenities: "amenities", trust: "trust" };
+
+function hpArr(kind){
+  if(kind === "why") return hpDraft.why.items;
+  if(kind === "amenities") return hpDraft.amenities.items;
+  if(kind === "trust") return hpDraft.trust.items;
+  if(kind === "stats") return hpDraft.trust.stats;
+  return hpDraft[kind];
+}
+function hpRender(kind){
+  if(kind === "hero") renderHpHero();
+  else if(kind === "locations") renderHpLocations();
+  else if(kind === "styles") renderHpStyles();
+  else if(kind === "why") renderHpWhy();
+  else if(kind === "amenities") renderHpAmenities();
+  else renderHpTrust();
+}
+function hpRowHead(label, i, n){
+  return '<div class="faq-edit-head"><strong>' + adminEsc(label) + ' ' + (i + 1) + '</strong>' +
+    '<span class="admin-row-actions">' +
+      '<button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-act="up"' + (i === 0 ? " disabled" : "") + ' aria-label="Move up">↑</button>' +
+      '<button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-act="down"' + (i === n - 1 ? " disabled" : "") + ' aria-label="Move down">↓</button>' +
+      '<button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-act="del">Delete</button>' +
+    '</span></div>';
+}
+function hpIconOptions(selected){
+  return Object.keys(ICON_LIBRARY).map(function(k){
+    return '<option value="' + k + '"' + (k === selected ? " selected" : "") + '>' + adminEsc(ICON_LIBRARY[k].label) + '</option>';
+  }).join("");
+}
+
+function initHomePage(){
+  document.getElementById("homeTabs").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-tab]");
+    if(btn) showHomeTab(btn.dataset.tab);
+  });
+
+  ["hero", "locations", "styles", "why", "amenities", "trust", "stats"].forEach(function(kind){
+    var box = document.getElementById(HP_BOX[kind]);
+
+    box.addEventListener("input", function(e){
+      var row = e.target.closest(".faq-edit");
+      var f = e.target.dataset.f;
+      if(!row || !f) return;
+      var item = hpArr(kind)[Number(row.dataset.i)];
+      if(!item) return;
+      item[f] = e.target.value;
+      if(f === "icon"){
+        var prev = row.querySelector(".hp-icon-preview");
+        if(prev) prev.innerHTML = iconSVG(e.target.value, 24);
+      }
+    });
+
+    box.addEventListener("change", function(e){
+      var row = e.target.closest(".faq-edit");
+      if(!row) return;
+      var i = Number(row.dataset.i);
+      var item = hpArr(kind)[i];
+      if(!item) return;
+      if(e.target.dataset.f === "img"){
+        var thumb = row.querySelector(".hp-thumb img");
+        if(thumb) thumb.src = safeImgUrl(item.img) || "";
+        return;
+      }
+      if(e.target.type === "file"){
+        var file = e.target.files && e.target.files[0];
+        if(!file) return;
+        var st = row.querySelector(".hp-status");
+        if(st) st.textContent = "Uploading…";
+        adminUploadPhoto(file).then(function(url){
+          item.img = url;
+          hpRender(kind);
+        }).catch(function(err){
+          if(st) st.textContent = "Couldn't upload: " + err.message;
+        });
+      }
+    });
+
+    box.addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-act]");
+      if(!btn) return;
+      var arr = hpArr(kind);
+      var i = Number(btn.closest(".faq-edit").dataset.i);
+      if(btn.dataset.act === "up" && i > 0){ var a = arr[i - 1]; arr[i - 1] = arr[i]; arr[i] = a; }
+      if(btn.dataset.act === "down" && i < arr.length - 1){ var b = arr[i + 1]; arr[i + 1] = arr[i]; arr[i] = b; }
+      if(btn.dataset.act === "del"){ arr.splice(i, 1); }
+      hpRender(kind);
+    });
+  });
+
+  document.getElementById("hpWhyTitle").addEventListener("input", function(e){ hpDraft.why.title = e.target.value; });
+
+  document.getElementById("hpAddHero").addEventListener("click", function(){
+    if(hpDraft.hero.length >= 8){ adminToast("8 photos is the most the top banner can hold."); return; }
+    hpDraft.hero.push({ img: "" }); renderHpHero();
+  });
+  document.getElementById("hpSaveHero").addEventListener("click", saveHpHero);
+  document.getElementById("hpResetHero").addEventListener("click", function(){ hpReset("hero"); });
+  document.getElementById("hpAddLocation").addEventListener("click", function(){ hpDraft.locations.push({ name: "", img: "" }); renderHpLocations(); hpFocusLast("hpLocationsBox"); });
+  document.getElementById("hpAddStyle").addEventListener("click", function(){ hpDraft.styles.push({ name: "", type: "", icon: "home" }); renderHpStyles(); hpFocusLast("hpStylesBox"); });
+  document.getElementById("hpAddWhy").addEventListener("click", function(){ hpDraft.why.items.push({ icon: "star", title: "", text: "" }); renderHpWhy(); hpFocusLast("hpWhyBox"); });
+
+  document.getElementById("hpSaveLocations").addEventListener("click", saveHpLocations);
+  document.getElementById("hpSaveStyles").addEventListener("click", saveHpStyles);
+  document.getElementById("hpSaveWhy").addEventListener("click", saveHpWhy);
+  document.getElementById("hpResetLocations").addEventListener("click", function(){ hpReset("locations"); });
+  document.getElementById("hpResetStyles").addEventListener("click", function(){ hpReset("categories"); });
+  document.getElementById("hpResetWhy").addEventListener("click", function(){ hpReset("why"); });
+
+  document.getElementById("hpAmenTitle").addEventListener("input", function(e){ hpDraft.amenities.title = e.target.value; });
+  document.getElementById("hpAmenSub").addEventListener("input", function(e){ hpDraft.amenities.subtitle = e.target.value; });
+  document.getElementById("hpAddAmenity").addEventListener("click", function(){ hpDraft.amenities.items.push({ icon: "star", label: "" }); renderHpAmenities(); hpFocusLast("hpAmenitiesBox"); });
+  document.getElementById("hpSaveAmenities").addEventListener("click", saveHpAmenities);
+  document.getElementById("hpResetAmenities").addEventListener("click", function(){ hpReset("amenities"); });
+
+  document.getElementById("hpAddTrust").addEventListener("click", function(){ hpDraft.trust.items.push({ icon: "star", title: "", text: "" }); renderHpTrust(); hpFocusLast("hpTrustBox"); });
+  document.getElementById("hpAddStat").addEventListener("click", function(){ hpDraft.trust.stats.push({ num: "", label: "" }); renderHpTrust(); hpFocusLast("hpStatsBox"); });
+  document.getElementById("hpSaveTrust").addEventListener("click", saveHpTrust);
+  document.getElementById("hpResetTrust").addEventListener("click", function(){ hpReset("trust"); });
+
+  showHomeTab("hero");
+}
+
+function hpFocusLast(boxId){
+  var input = document.querySelector("#" + boxId + " .faq-edit:last-child input");
+  if(input) input.focus();
+}
+
+function showHomeTab(tab){
+  homeTab = tab;
+  document.querySelectorAll("#homeTabs button").forEach(function(b){
+    var on = b.dataset.tab === tab;
+    b.classList.toggle("admin-btn-gold", on);
+    b.classList.toggle("admin-btn-outline", !on);
+  });
+  Object.keys(HP_PANEL).forEach(function(k){ document.getElementById(HP_PANEL[k]).hidden = tab !== k; });
+  if(tab === "hero") loadHpHero();
+  if(tab === "locations") loadHpLocations();
+  if(tab === "styles") loadHpStyles();
+  if(tab === "why") loadHpWhy();
+  if(tab === "amenities") loadHpAmenities();
+  if(tab === "trust") loadHpTrust();
+}
+
+function hpReset(contentId){
+  if(!confirm("Go back to the original list? Your edits to this section will be removed.")) return;
+  DataService.deleteContent(contentId).then(function(){
+    adminToast("Original restored.");
+    showHomeTab(homeTab);
+  }).catch(function(err){ adminToast("Couldn't restore: " + err.message); });
+}
+
+/* ---------- Hero photos ---------- */
+var HERO_DEFAULTS = ["images/bg-1.jpg", "images/bg-2.jpg", "images/bg-3.jpg", "images/bg-4.jpg"];
+function loadHpHero(){
+  DataService.getContent("hero").then(function(c){
+    var items = c && Array.isArray(c.items) && c.items.length ? c.items.map(function(x){ return x.img || ""; }) : HERO_DEFAULTS;
+    hpDraft.hero = items.map(function(u){ return { img: u }; });
+    renderHpHero();
+  });
+}
+function renderHpHero(){
+  var box = document.getElementById("hpHeroBox");
+  var list = hpDraft.hero;
+  if(!list.length){ box.innerHTML = '<p class="admin-empty">No photos. Click “+ Add photo”.</p>'; return; }
+  box.innerHTML = list.map(function(l, i){
+    return '<div class="faq-edit" data-i="' + i + '">' + hpRowHead("Photo", i, list.length) +
+      '<div class="hp-row">' +
+        '<div class="hp-thumb"><img alt="" src="' + adminEsc(safeImgUrl(l.img)) + '"></div>' +
+        '<div class="hp-fields">' +
+          '<div class="admin-field"><input type="text" data-f="img" placeholder="Photo link (https://…)" value="' + adminEsc(l.img) + '"></div>' +
+          '<label class="admin-btn admin-btn-outline admin-btn-sm" style="align-self:flex-start;cursor:pointer;">Upload photo<input type="file" accept="image/*" style="display:none"></label>' +
+          '<span class="hp-status"></span>' +
+        '</div>' +
+      '</div></div>';
+  }).join("");
+}
+function saveHpHero(){
+  var items = hpDraft.hero.map(function(l){ return { img: String(l.img || "").trim() }; }).filter(function(l){ return l.img; });
+  if(!items.length){ adminToast("Add at least one photo."); return; }
+  for(var i = 0; i < items.length; i++){
+    if(!safeImgUrl(items[i].img)){ adminToast("Photo " + (i + 1) + ": the link must start with https://"); return; }
+  }
+  DataService.saveContent("hero", { items: items }).then(function(){
+    hpDraft.hero = items;
+    renderHpHero();
+    adminToast("Hero photos saved. The home page shows them now.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ---------- Locations ---------- */
+function loadHpLocations(){
+  DataService.getContent("locations").then(function(c){
+    var items = c && Array.isArray(c.items) && c.items.length ? c.items : LOCATIONS;
+    hpDraft.locations = items.map(function(l){ return { name: l.name || "", img: l.img || "" }; });
+    renderHpLocations();
+  });
+}
+function renderHpLocations(){
+  var box = document.getElementById("hpLocationsBox");
+  var list = hpDraft.locations;
+  if(!list.length){ box.innerHTML = '<p class="admin-empty">No locations. Click “+ Add location”.</p>'; return; }
+  box.innerHTML = list.map(function(l, i){
+    return '<div class="faq-edit" data-i="' + i + '">' + hpRowHead("Location", i, list.length) +
+      '<div class="hp-row">' +
+        '<div class="hp-thumb"><img alt="" src="' + adminEsc(safeImgUrl(l.img)) + '"></div>' +
+        '<div class="hp-fields">' +
+          '<div class="admin-field"><input type="text" data-f="name" maxlength="40" placeholder="Location name, e.g. Lekki Phase 1" value="' + adminEsc(l.name) + '"></div>' +
+          '<div class="admin-field"><input type="text" data-f="img" placeholder="Photo link (https://…)" value="' + adminEsc(l.img) + '"></div>' +
+          '<label class="admin-btn admin-btn-outline admin-btn-sm" style="align-self:flex-start;cursor:pointer;">Upload photo<input type="file" accept="image/*" style="display:none"></label>' +
+          '<span class="hp-status"></span>' +
+        '</div>' +
+      '</div></div>';
+  }).join("");
+}
+function saveHpLocations(){
+  var items = hpDraft.locations.map(function(l){ return { name: String(l.name || "").trim(), img: String(l.img || "").trim() }; })
+    .filter(function(l){ return l.name || l.img; });
+  if(!items.length){ adminToast("Add at least one location."); return; }
+  for(var i = 0; i < items.length; i++){
+    if(!items[i].name){ adminToast("Location " + (i + 1) + " needs a name."); return; }
+    if(items[i].img && !safeImgUrl(items[i].img)){ adminToast("Location " + (i + 1) + ": the photo link must start with https://"); return; }
+  }
+  DataService.saveContent("locations", { items: items }).then(function(){
+    hpDraft.locations = items;
+    renderHpLocations();
+    adminToast("Locations saved. The home page shows them now.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ---------- Browse by type ---------- */
+function loadHpStyles(){
+  Promise.all([DataService.getContent("categories"), AdminData.getProperties().catch(function(){ return []; })]).then(function(r){
+    var c = r[0];
+    var items = c && Array.isArray(c.items) && c.items.length ? c.items : CATEGORIES;
+    hpDraft.styles = items.map(function(x){ return { name: x.name || "", type: x.type || "", icon: ICON_LIBRARY[x.icon] ? x.icon : "home" }; });
+    var seen = {};
+    r[1].forEach(function(p){ if(p.type) seen[p.type] = true; });
+    document.getElementById("hpTypeList").innerHTML = Object.keys(seen).map(function(t){ return '<option value="' + adminEsc(t) + '"></option>'; }).join("");
+    renderHpStyles();
+  });
+}
+function renderHpStyles(){
+  var box = document.getElementById("hpStylesBox");
+  var list = hpDraft.styles;
+  if(!list.length){ box.innerHTML = '<p class="admin-empty">No types. Click “+ Add type”.</p>'; return; }
+  box.innerHTML = list.map(function(c, i){
+    return '<div class="faq-edit" data-i="' + i + '">' + hpRowHead("Type", i, list.length) +
+      '<div class="hp-fields">' +
+        '<div class="admin-field"><label>Name shown on the tile</label><input type="text" data-f="name" maxlength="30" placeholder="e.g. Penthouses" value="' + adminEsc(c.name) + '"></div>' +
+        '<div class="admin-field"><label>Matches property type</label><input type="text" data-f="type" list="hpTypeList" maxlength="40" placeholder="e.g. Penthouse" value="' + adminEsc(c.type) + '"></div>' +
+        '<div class="admin-field"><label>Icon</label><div class="hp-inline"><span class="hp-icon-preview">' + iconSVG(c.icon, 24) + '</span><select data-f="icon">' + hpIconOptions(c.icon) + '</select></div></div>' +
+      '</div></div>';
+  }).join("");
+}
+function saveHpStyles(){
+  var items = hpDraft.styles.map(function(c){ return { name: String(c.name || "").trim(), type: String(c.type || "").trim(), icon: c.icon || "home" }; })
+    .filter(function(c){ return c.name || c.type; });
+  if(!items.length){ adminToast("Add at least one type."); return; }
+  for(var i = 0; i < items.length; i++){
+    if(!items[i].name || !items[i].type){ adminToast("Type " + (i + 1) + " needs both a name and the property type it matches."); return; }
+  }
+  DataService.saveContent("categories", { items: items }).then(function(){
+    hpDraft.styles = items;
+    renderHpStyles();
+    adminToast("Saved. The home page and the Stays filter show these types now.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ---------- Why choose us ---------- */
+function loadHpWhy(){
+  Promise.all([DataService.getContent("why"), DataService.getContent("site")]).then(function(r){
+    var saved = r[0], texts = (r[1] && r[1].texts) || {};
+    if(saved && Array.isArray(saved.items) && saved.items.length){
+      hpDraft.why = { title: saved.title || WHY_DEFAULTS.title, items: saved.items.map(function(x){ return { icon: ICON_LIBRARY[x.icon] ? x.icon : "star", title: x.title || "", text: x.text || "" }; }) };
+    } else {
+      // Nothing saved yet: start from what the site shows now (including any wording changed under Content → Site text).
+      hpDraft.why = {
+        title: texts.why_title || WHY_DEFAULTS.title,
+        items: WHY_DEFAULTS.items.map(function(it, n){
+          return { icon: it.icon, title: texts["why" + (n + 1) + "_title"] || it.title, text: texts["why" + (n + 1) + "_text"] || it.text };
+        })
+      };
+    }
+    document.getElementById("hpWhyTitle").value = hpDraft.why.title;
+    renderHpWhy();
+  });
+}
+function renderHpWhy(){
+  var box = document.getElementById("hpWhyBox");
+  var list = hpDraft.why.items;
+  if(!list.length){ box.innerHTML = '<p class="admin-empty">No points. Click “+ Add point”.</p>'; return; }
+  box.innerHTML = list.map(function(w, i){
+    return '<div class="faq-edit" data-i="' + i + '">' + hpRowHead("Point", i, list.length) +
+      '<div class="hp-fields">' +
+        '<div class="admin-field"><div class="hp-inline"><span class="hp-icon-preview">' + iconSVG(w.icon, 24) + '</span><select data-f="icon">' + hpIconOptions(w.icon) + '</select></div></div>' +
+        '<div class="admin-field"><input type="text" data-f="title" maxlength="50" placeholder="Title, e.g. Verified Listings" value="' + adminEsc(w.title) + '"></div>' +
+        '<div class="admin-field"><textarea data-f="text" rows="2" maxlength="200" placeholder="One short sentence">' + adminEsc(w.text) + '</textarea></div>' +
+      '</div></div>';
+  }).join("");
+}
+function saveHpWhy(){
+  var items = hpDraft.why.items.map(function(w){ return { icon: w.icon || "star", title: String(w.title || "").trim(), text: String(w.text || "").trim() }; })
+    .filter(function(w){ return w.title || w.text; });
+  if(!items.length){ adminToast("Add at least one point."); return; }
+  for(var i = 0; i < items.length; i++){
+    if(!items[i].title){ adminToast("Point " + (i + 1) + " needs a title."); return; }
+  }
+  var title = String(hpDraft.why.title || "").trim() || WHY_DEFAULTS.title;
+  DataService.saveContent("why", { title: title, items: items }).then(function(){
+    hpDraft.why = { title: title, items: items };
+    document.getElementById("hpWhyTitle").value = title;
+    renderHpWhy();
+    adminToast("Saved. The home page shows the new “Why choose us”.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ---------- Amenities ---------- */
+function loadHpAmenities(){
+  DataService.getContent("amenities").then(function(c){
+    var src = c && Array.isArray(c.items) && c.items.length ? c : AMENITIES_DEFAULTS;
+    hpDraft.amenities = {
+      title: src.title || AMENITIES_DEFAULTS.title,
+      subtitle: typeof src.subtitle === "string" ? src.subtitle : AMENITIES_DEFAULTS.subtitle,
+      items: src.items.map(function(x){ return { icon: ICON_LIBRARY[x.icon] ? x.icon : "star", label: x.label || "" }; })
+    };
+    document.getElementById("hpAmenTitle").value = hpDraft.amenities.title;
+    document.getElementById("hpAmenSub").value = hpDraft.amenities.subtitle;
+    renderHpAmenities();
+  });
+}
+function renderHpAmenities(){
+  var box = document.getElementById("hpAmenitiesBox");
+  var list = hpDraft.amenities.items;
+  if(!list.length){ box.innerHTML = '<p class="admin-empty">No amenities. Click “+ Add amenity”.</p>'; return; }
+  box.innerHTML = list.map(function(a, i){
+    return '<div class="faq-edit" data-i="' + i + '">' + hpRowHead("Amenity", i, list.length) +
+      '<div class="hp-fields">' +
+        '<div class="admin-field"><div class="hp-inline"><span class="hp-icon-preview">' + iconSVG(a.icon, 24) + '</span><select data-f="icon">' + hpIconOptions(a.icon) + '</select></div></div>' +
+        '<div class="admin-field"><input type="text" data-f="label" maxlength="30" placeholder="e.g. Swimming Pool" value="' + adminEsc(a.label) + '"></div>' +
+      '</div></div>';
+  }).join("");
+}
+function saveHpAmenities(){
+  var items = hpDraft.amenities.items.map(function(a){ return { icon: a.icon || "star", label: String(a.label || "").trim() }; })
+    .filter(function(a){ return a.label; });
+  if(!items.length){ adminToast("Add at least one amenity."); return; }
+  var doc = {
+    title: String(hpDraft.amenities.title || "").trim() || AMENITIES_DEFAULTS.title,
+    subtitle: String(hpDraft.amenities.subtitle || "").trim(),
+    items: items
+  };
+  DataService.saveContent("amenities", doc).then(function(){
+    hpDraft.amenities = doc;
+    renderHpAmenities();
+    adminToast("Saved. The home page shows the new amenities.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ---------- Trust badges + numbers ---------- */
+function loadHpTrust(){
+  DataService.getContent("trust").then(function(c){
+    var items = c && Array.isArray(c.items) && c.items.length ? c.items : TRUST_DEFAULTS.items;
+    var stats = c && Array.isArray(c.stats) && c.stats.length ? c.stats : TRUST_DEFAULTS.stats;
+    hpDraft.trust = {
+      items: items.map(function(x){ return { icon: ICON_LIBRARY[x.icon] ? x.icon : "star", title: x.title || "", text: x.text || "" }; }),
+      stats: stats.map(function(x){ return { num: x.num || "", label: x.label || "" }; })
+    };
+    renderHpTrust();
+  });
+}
+function renderHpTrust(){
+  var tBox = document.getElementById("hpTrustBox"), sBox = document.getElementById("hpStatsBox");
+  var items = hpDraft.trust.items, stats = hpDraft.trust.stats;
+  tBox.innerHTML = items.length ? items.map(function(t, i){
+    return '<div class="faq-edit" data-i="' + i + '">' + hpRowHead("Badge", i, items.length) +
+      '<div class="hp-fields">' +
+        '<div class="admin-field"><div class="hp-inline"><span class="hp-icon-preview">' + iconSVG(t.icon, 24) + '</span><select data-f="icon">' + hpIconOptions(t.icon) + '</select></div></div>' +
+        '<div class="admin-field"><input type="text" data-f="title" maxlength="40" placeholder="Title, e.g. Verified &amp; Secure" value="' + adminEsc(t.title) + '"></div>' +
+        '<div class="admin-field"><input type="text" data-f="text" maxlength="80" placeholder="Short line under it" value="' + adminEsc(t.text) + '"></div>' +
+      '</div></div>';
+  }).join("") : '<p class="admin-empty">No badges.</p>';
+  sBox.innerHTML = stats.length ? stats.map(function(x, i){
+    return '<div class="faq-edit" data-i="' + i + '">' + hpRowHead("Number", i, stats.length) +
+      '<div class="hp-fields">' +
+        '<div class="admin-field"><input type="text" data-f="num" maxlength="12" placeholder="e.g. 500+" value="' + adminEsc(x.num) + '"></div>' +
+        '<div class="admin-field"><input type="text" data-f="label" maxlength="30" placeholder="e.g. Luxury Stays" value="' + adminEsc(x.label) + '"></div>' +
+      '</div></div>';
+  }).join("") : '<p class="admin-empty">No numbers.</p>';
+}
+function saveHpTrust(){
+  var items = hpDraft.trust.items.map(function(t){ return { icon: t.icon || "star", title: String(t.title || "").trim(), text: String(t.text || "").trim() }; })
+    .filter(function(t){ return t.title || t.text; });
+  var stats = hpDraft.trust.stats.map(function(x){ return { num: String(x.num || "").trim(), label: String(x.label || "").trim() }; })
+    .filter(function(x){ return x.num || x.label; });
+  for(var i = 0; i < items.length; i++){ if(!items[i].title){ adminToast("Badge " + (i + 1) + " needs a title."); return; } }
+  for(var j = 0; j < stats.length; j++){ if(!stats[j].num){ adminToast("Number " + (j + 1) + " needs a value like 500+."); return; } }
+  if(!items.length && !stats.length){ adminToast("Add at least one badge or number."); return; }
+  DataService.saveContent("trust", { items: items, stats: stats }).then(function(){
+    hpDraft.trust = { items: items, stats: stats };
+    renderHpTrust();
+    adminToast("Saved. The home page shows the new badges and numbers.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+
+/* ===== admin-notifications.js ===== */
+/* ==========================================================
+   ADMIN — NOTIFICATIONS
+   "Every guest"  -> Firestore broadcasts/<id>
+   "One guest"    -> Firestore notifications/<id> (toUid), which only
+                     that guest (and admins) can read.
+========================================================== */
+var notifyUsers = [];
+var notifySent = [];
+var pendingNotifyTo = "";
+
+function initNotificationsPage(){
+  var form = document.getElementById("notifyForm");
+  form.audience.addEventListener("change", syncNotifyAudience);
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var me = AdminAuth.currentUser();
+    var title = form.title.value.trim();
+    var message = form.message.value.trim();
+    if(!title){ adminToast("Give the notification a title."); return; }
+    if(!message){ adminToast("Write a message."); return; }
+
+    var btn = document.getElementById("notifySendBtn");
+    var send;
+    if(form.audience.value === "one"){
+      var email = form.to.value.trim().toLowerCase();
+      var user = notifyUsers.find(function(u){ return String(u.email || "").toLowerCase() === email; });
+      if(!user){ adminToast("No guest account uses that email. Pick one from the list."); return; }
+      send = function(){ return AdminData.sendNotification(user, { title: title, message: message }, me && me.email); };
+    } else {
+      if(!confirm("Send this to every guest?")) return;
+      send = function(){ return AdminData.sendBroadcast({ title: title, message: message }, me && me.email); };
+    }
+    btn.disabled = true;
+    send().then(function(){
+      form.title.value = "";
+      form.message.value = "";
+      adminToast("Notification sent.");
+      renderSentNotifications();
+    }).catch(function(err){
+      adminToast("Couldn't send: " + err.message);
+    }).finally(function(){ btn.disabled = false; });
+  });
+
+  document.getElementById("notifySentList").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-del]");
+    if(!btn) return;
+    var item = notifySent.find(function(n){ return n.id === btn.dataset.del; });
+    if(!item || !confirm("Delete this notification? Guests will no longer see it.")) return;
+    AdminData.deleteSentNotification(item).then(function(){
+      adminToast("Deleted.");
+      renderSentNotifications();
+    }).catch(function(err){ adminToast("Couldn't delete: " + err.message); });
+  });
+
+  refreshNotificationsPage();
+}
+
+function syncNotifyAudience(){
+  var form = document.getElementById("notifyForm");
+  document.getElementById("notifyToWrap").hidden = form.audience.value !== "one";
+}
+
+function refreshNotificationsPage(){
+  var form = document.getElementById("notifyForm");
+  AdminData.getUsers().then(function(list){
+    notifyUsers = list.filter(function(u){ return u.uid || u.id; });
+    document.getElementById("notifyUsers").innerHTML = notifyUsers.map(function(u){
+      return '<option value="' + adminEsc(u.email || "") + '">' + adminEsc(u.name || "") + '</option>';
+    }).join("");
+  }).catch(function(){ notifyUsers = []; });
+
+  if(pendingNotifyTo){
+    form.audience.value = "one";
+    form.to.value = pendingNotifyTo;
+    pendingNotifyTo = "";
+  }
+  syncNotifyAudience();
+  renderSentNotifications();
+}
+
+function renderSentNotifications(){
+  var wrap = document.getElementById("notifySentList");
+  wrap.innerHTML = '<p class="admin-empty">Loading…</p>';
+  AdminData.getSentNotifications().then(function(list){
+    notifySent = list;
+    if(!list.length){ wrap.innerHTML = '<p class="admin-empty">Nothing sent yet.</p>'; return; }
+    wrap.innerHTML = list.map(function(n){
+      var to = n.kind === "direct" ? adminEsc(n.toEmail || n.toName || "One guest") : "Every guest";
+      return '<div class="notify-row">' +
+        '<div class="notify-row-head"><div><strong>' + adminEsc(n.title) + '</strong><br><span style="font-size:12px;color:var(--text-muted);">' + to + ' · ' + adminFormatDate(n.createdAt) + '</span></div>' +
+        '<button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-del="' + adminEsc(n.id) + '">Delete</button></div>' +
+        '<p>' + adminEsc(n.message) + '</p></div>';
+    }).join("");
+  }).catch(function(err){
+    wrap.innerHTML = '<p class="admin-empty">Couldn\'t load: ' + adminEsc(err.message) + '</p>';
+  });
+}
+
+/* ===== admin-app.js ===== */
+/* ==========================================================
+   ADMIN — APP
+   One page: a sign-in screen plus eleven sections. The URL hash picks
+   the section (admin.html#gallery), so refresh, back/forward and
+   bookmarks all work. Each section is set up the first time you open
+   it and reloads its data on every later visit.
+========================================================== */
+var ADMIN_SECTIONS = {
+  dashboard:  { title: "Dashboard",  init: initDashboardPage,  refresh: renderDashboard },
+  properties: { title: "Properties", init: initPropertiesPage, refresh: renderPropertiesTable },
+  bookings:   { title: "Bookings",   init: initBookingsPage,   refresh: renderBookingsTable },
+  reviews:    { title: "Reviews",    init: initReviewsPage,    refresh: renderReviewsTable },
+  gallery:    { title: "Gallery",    init: initGalleryPage,    refresh: openGallerySection },
+  promos:     { title: "Promo codes", init: initPromosPage,    refresh: renderPromosTable },
+  homepage:   { title: "Home page",  init: initHomePage,       refresh: function(){ showHomeTab(homeTab); } },
+  content:    { title: "Content",    init: initContentPage,    refresh: function(){ showContentTab(contentTab); } },
+  notifications: { title: "Notifications", init: initNotificationsPage, refresh: refreshNotificationsPage },
+  users:      { title: "Users",      init: initUsersPage,      refresh: loadUsers },
+  settings:   { title: "Settings",   init: initSettingsPage,   refresh: renderAdmins }
+};
+var adminSectionReady = {};
+var adminChromeReady = false;
+
+function showAdminSection(){
+  var key = location.hash.replace("#", "");
+  if(!ADMIN_SECTIONS[key]) key = "dashboard";
+  var section = ADMIN_SECTIONS[key];
+
+  document.querySelectorAll(".admin-section").forEach(function(el){
+    el.hidden = el.id !== "section-" + key;
+  });
+  document.querySelectorAll(".admin-nav-link[data-key]").forEach(function(a){
+    a.classList.toggle("active", a.dataset.key === key);
+  });
+  document.getElementById("adminTitle").textContent = section.title;
+  document.title = section.title + " | Shortlet Magnificent Admin";
+  window.scrollTo(0, 0);
+
+  if(adminSectionReady[key]) section.refresh();
+  else { adminSectionReady[key] = true; section.init(); }
+
+}
+
+/* ---------- Sign-in screen <-> panel ---------- */
+function enterPanel(){
+  document.body.classList.remove("admin-login-on");
+  document.body.classList.add("admin-ready");
+  if(!adminChromeReady){
+    adminChromeReady = true;
+    initAdminChrome();
+    window.addEventListener("hashchange", function(){
+      if(document.body.classList.contains("admin-ready")) showAdminSection();
+    });
+  } else {
+    setAdminSignedIn();
+  }
+  // Receipts show the saved contact details.
+  DataService.getSettings().then(function(s){
+    window.SITE_CONTACT = { phone: s.phone, whatsapp: s.whatsapp, email: s.email };
+  });
+  showAdminSection();
+}
+
+function showSignIn(signedInUser){
+  document.body.classList.remove("admin-ready");
+  document.body.classList.add("admin-login-on");
+  document.title = "Admin Login | Shortlet Magnificent";
+  var noAccess = signedInUser && signedInUser.email;
+  document.getElementById("adminLoginForm").hidden = !!noAccess;
+  document.getElementById("adminLoginNoAccess").hidden = !noAccess;
+  if(noAccess){
+    document.getElementById("adminLoginNoAccessText").textContent =
+      signedInUser.email + " is signed in, but it isn't an admin account.";
+  }
+}
+
+/* ---------- Too many wrong attempts: lock the sign-in ----------
+   5 wrong sign-ins in a row -> wait 30 minutes. If it happens again after
+   that, wait 1 hour. A correct sign-in clears everything.
+   Kept in this browser (survives reloads). It's a brake for guessing at the
+   screen; Firebase also throttles repeated bad logins on its own servers. */
+var ADMIN_LOCK_KEY = "adminSignInLock";
+var ADMIN_MAX_FAILS = 5;
+var adminLockMemory = { fails: 0, until: 0, level: 0 };
+
+function readAdminLock(){
+  try{
+    var raw = localStorage.getItem(ADMIN_LOCK_KEY);
+    if(raw){ adminLockMemory = Object.assign({ fails: 0, until: 0, level: 0 }, JSON.parse(raw)); }
+  }catch(e){}
+  return adminLockMemory;
+}
+function writeAdminLock(state){
+  adminLockMemory = state;
+  try{ localStorage.setItem(ADMIN_LOCK_KEY, JSON.stringify(state)); }catch(e){}
+}
+function adminLockRemainingMs(){ return Math.max(0, readAdminLock().until - Date.now()); }
+function registerAdminFailure(){
+  var s = readAdminLock();
+  s.fails = (s.fails || 0) + 1;
+  if(s.fails >= ADMIN_MAX_FAILS){
+    s.level = Math.min(2, (s.level || 0) + 1);
+    s.until = Date.now() + (s.level === 1 ? 30 : 60) * 60 * 1000;
+    s.fails = 0;
+  }
+  writeAdminLock(s);
+  return s;
+}
+function clearAdminLock(){
+  adminLockMemory = { fails: 0, until: 0, level: 0 };
+  try{ localStorage.removeItem(ADMIN_LOCK_KEY); }catch(e){}
+}
+function formatCountdown(ms){
+  var total = Math.ceil(ms / 1000);
+  var h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), sec = total % 60;
+  var mm = String(m).padStart(2, "0"), ss = String(sec).padStart(2, "0");
+  return h ? h + ":" + mm + ":" + ss : mm + ":" + ss;
+}
+
+function initSignInForm(){
+  var form = document.getElementById("adminLoginForm");
+  var errorEl = document.getElementById("adminLoginError");
+  var noteEl = document.getElementById("adminLoginNote");
+  var submitBtn = document.getElementById("adminLoginSubmit");
+  var emailInput = document.getElementById("adminEmail");
+  var pwInput = document.getElementById("adminPassword");
+
+  function say(el, msg){ el.textContent = msg || ""; el.classList.toggle("show", !!msg); }
+  var lockTimer = null;
+  function setLoading(on){
+    submitBtn.disabled = on;
+    submitBtn.textContent = on ? "Signing in…" : "Sign in";
+  }
+  // While locked: disable the form and count down. Runs on load too, so
+  // reloading the page doesn't get around it.
+  function applyLock(){
+    clearInterval(lockTimer);
+    var remaining = adminLockRemainingMs();
+    var locked = remaining > 0;
+    emailInput.disabled = pwInput.disabled = submitBtn.disabled = locked;
+    if(!locked){
+      if(errorEl.dataset.lock){ say(errorEl, ""); delete errorEl.dataset.lock; }
+      submitBtn.textContent = "Sign in";
+      return;
+    }
+    errorEl.dataset.lock = "1";
+    submitBtn.textContent = "Locked";
+    var tick = function(){
+      var left = adminLockRemainingMs();
+      if(left <= 0){ applyLock(); return; }
+      var span = readAdminLock().level >= 2 ? "1 hour" : "30 minutes";
+      say(errorEl, "Too many wrong attempts. Sign-in is locked for " + span + ". Try again in " + formatCountdown(left) + ".");
+      errorEl.dataset.lock = "1";
+    };
+    tick();
+    lockTimer = setInterval(tick, 1000);
+  }
+  function failedAttempt(message){
+    var s = registerAdminFailure();
+    if(adminLockRemainingMs() > 0){ applyLock(); return; }
+    var left = ADMIN_MAX_FAILS - (s.fails || 0);
+    say(errorEl, message + " " + left + " attempt" + (left === 1 ? "" : "s") + " left.");
+  }
+  function friendlyError(err){
+    var code = (err && err.code) || "";
+    if(code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found"){
+      return "That email or password doesn't look right.";
+    }
+    if(code === "auth/invalid-email") return "That doesn't look like a valid email address.";
+    if(code === "auth/network-request-failed") return "Network error — check your connection and try again.";
+    if(code === "auth/too-many-requests") return "Too many attempts. Please wait a moment and try again.";
+    if(code === "auth/user-disabled") return "This account has been disabled.";
+    return (err && err.message) || "Something went wrong. Please try again.";
+  }
+
+  document.getElementById("adminTogglePw").addEventListener("click", function(){
+    var hidden = pwInput.type === "password";
+    pwInput.type = hidden ? "text" : "password";
+    this.textContent = hidden ? "Hide" : "Show";
+    this.setAttribute("aria-label", hidden ? "Hide password" : "Show password");
+  });
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    say(errorEl, ""); say(noteEl, "");
+    var email = emailInput.value.trim();
+    var password = pwInput.value;
+    if(adminLockRemainingMs() > 0){ applyLock(); return; }
+    if(!email || !password){ say(errorEl, "Enter your email and password."); return; }
+    setLoading(true);
+
+    AdminAuth.login(email, password).then(function(cred){
+      return AdminAuth.isAdmin(cred.user).then(function(ok){
+        if(ok){ clearAdminLock(); pwInput.value = ""; setLoading(false); enterPanel(); return; }
+        // Valid account, but not an admin: don't leave them signed in here.
+        return AdminAuth.logout().then(function(){
+          setLoading(false);
+          failedAttempt("This account doesn't have admin access.");
+        });
+      });
+    }).catch(function(err){
+      setLoading(false);
+      var code = (err && err.code) || "";
+      if(code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found" || code === "auth/invalid-email"){
+        failedAttempt(friendlyError(err));
+      } else {
+        say(errorEl, friendlyError(err));
+      }
+    });
+  });
+
+  document.getElementById("adminLoginSwitch").addEventListener("click", function(){
+    AdminAuth.logout();
+  });
+
+  applyLock();
+}
+
+/* ---------- Boot ---------- */
+initSignInForm();
+
+// Runs on load and whenever the session changes (sign-out in another tab, etc.)
+AdminAuth.onInit(function(user){
+  if(!user){ showSignIn(); return; }
+  AdminAuth.isAdmin(user).then(function(ok){ if(ok) enterPanel(); else showSignIn(user); });
+});
+AdminAuth.onLogout(function(){ showSignIn(); });
+</script>
+</body>
+</html>
