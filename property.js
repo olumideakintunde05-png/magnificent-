@@ -10,8 +10,80 @@ function getPropertyIdFromUrl(){
   return params.get("id");
 }
 
+/* ---------- SEO: every apartment gets its own title, description, link and structured data ---------- */
+const SEO_SITE = "https://shortletmagnificent.com";
+function seoMeta(attr, name, value){
+  let el = document.head.querySelector('meta[' + attr + '="' + name + '"]');
+  if(!el){ el = document.createElement("meta"); el.setAttribute(attr, name); document.head.appendChild(el); }
+  el.setAttribute("content", value);
+}
+function seoAbs(u){
+  try{ return new URL(String(u || ""), SEO_SITE + "/").href; }catch(e){ return ""; }
+}
+function seoTrim(s, n){
+  s = String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  if(s.length <= n) return s;
+  const cut = s.slice(0, n - 1);
+  return cut.slice(0, Math.max(cut.lastIndexOf(" "), 80)).replace(/[,;:.\-–—\s]+$/, "") + "…";
+}
+function updatePropertySEO(p){
+  try{
+    const url = SEO_SITE + "/property.html?id=" + encodeURIComponent(p.id);
+    const loc = p.location || "Lagos";
+    let title = p.title + " in " + loc + " | Shortlet Magnificent";
+    if(title.length > 66) title = p.title + " in " + loc;
+    const facts = [p.bedrooms ? p.bedrooms + (p.bedrooms > 1 ? " bedrooms" : " bedroom") : "", p.guests ? "sleeps " + p.guests : ""].filter(Boolean).join(", ");
+    const priceTxt = p.price ? p.price + (p.period || "") : "";
+    const own = seoTrim(p.description, 157);
+    const made = p.title + " in " + loc + ", Lagos" + (facts ? " (" + facts + ")" : "") + (priceTxt ? ". From " + priceTxt : "") + ". Verified and fully furnished. Book via WhatsApp.";
+    const desc = own.length >= 70 ? own : seoTrim(made, 157);
+    const imgs = (p.images || []).map(seoAbs).filter(Boolean);
+
+    document.title = title;
+    seoMeta("name", "description", desc);
+    seoMeta("name", "robots", "index, follow, max-image-preview:large");
+    let can = document.head.querySelector('link[rel="canonical"]');
+    if(!can){ can = document.createElement("link"); can.rel = "canonical"; document.head.appendChild(can); }
+    can.href = url;
+    seoMeta("property", "og:title", title);
+    seoMeta("property", "og:description", desc);
+    seoMeta("property", "og:url", url);
+    if(imgs[0]){ seoMeta("property", "og:image", imgs[0]); seoMeta("name", "twitter:image", imgs[0]); }
+    seoMeta("name", "twitter:title", title);
+    seoMeta("name", "twitter:description", desc);
+
+    const node = {
+      "@type": "Apartment",
+      "@id": url + "#apartment",
+      "name": p.title,
+      "description": desc,
+      "url": url,
+      "image": imgs,
+      "address": { "@type": "PostalAddress", "addressLocality": loc, "addressRegion": "Lagos", "addressCountry": "NG" },
+      "numberOfBedrooms": p.bedrooms || undefined,
+      "numberOfBathroomsTotal": p.bathrooms || undefined,
+      "occupancy": p.guests ? { "@type": "QuantitativeValue", "maxValue": Number(p.guests) } : undefined,
+      "amenityFeature": (p.amenities || []).map((a) => ({ "@type": "LocationFeatureSpecification", "name": String(a), "value": true }))
+    };
+    const m = String(p.coords || "").match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if(m) node.geo = { "@type": "GeoCoordinates", "latitude": Number(m[1]), "longitude": Number(m[2]) };
+    const crumbs = {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": SEO_SITE + "/" },
+        { "@type": "ListItem", "position": 2, "name": "All Stays", "item": SEO_SITE + "/properties.html" },
+        { "@type": "ListItem", "position": 3, "name": p.title, "item": url }
+      ]
+    };
+    let ld = document.getElementById("propertyLd");
+    if(!ld){ ld = document.createElement("script"); ld.type = "application/ld+json"; ld.id = "propertyLd"; document.head.appendChild(ld); }
+    ld.textContent = JSON.stringify({ "@context": "https://schema.org", "@graph": [node, crumbs] });
+  }catch(e){ console.warn("SEO update skipped:", e); }
+}
+
 function renderDetailPage(property){
   currentProperty = property;
+  updatePropertySEO(property);
   const root = document.getElementById("propertyDetailRoot");
 
   const badgeClass = property.status === "For Rent" ? "rent" : "";
@@ -139,7 +211,6 @@ function renderDetailPage(property){
 
   wireGallery(property);
   wireDetailActions(property);
-  document.title = `${property.title} | Shortlet Magnificent`;
 }
 
 // The admin can give the map as a Google Maps link, an address, or (older
@@ -255,6 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
       
       const property = list.find(p => p.id === id);
       if (!property) {
+        seoMeta("name", "robots", "noindex, follow");
         ErrorHandler.showErrorState(root, 'Property Not Found', 'The requested property could not be found. Please try browsing other listings.');
         return;
       }

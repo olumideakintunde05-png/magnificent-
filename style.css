@@ -423,6 +423,15 @@ body.no-scroll{ overflow:hidden; height:100%; }
   background:var(--navy-deep);
 }
 .hero-bg-slide.active{ opacity:1; }
+/* Hero video: sits on top of the photos and fades in once it is really playing */
+.hero-video-wrap{ position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.hero-video-wrap video{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; object-position:60% center;
+  filter:saturate(0.85) brightness(0.94);
+  opacity:0; transition:opacity 1s ease; background:var(--navy-deep);
+}
+.hero-video-wrap video.on{ opacity:1; }
 .hero-fade{
   position:absolute; inset:0;
   background:linear-gradient(180deg, rgba(15,23,43,0.55) 0%, rgba(15,23,43,0.25) 35%, rgba(15,23,43,0.35) 60%, rgba(15,23,43,0.65) 100%);
@@ -1593,3 +1602,19 @@ textarea{ resize:none !important; }
 }
 /* photos that are still arriving show a shimmer instead of a blank gap */
 .property-media, .location-chip-img, .gallery-main, .gallery-thumb{ background-color:#ece7da; }
+
+/* Apartment names are real links (so Google can follow them); they look the same as before */
+.property-card-link{ color:inherit; text-decoration:none; }
+.property-card-link:focus-visible{ outline:2px solid var(--gold-dark); outline-offset:3px; border-radius:4px; }
+
+/* Guest rating summary (phones: compact; desktop.css makes it a full card) */
+.reviews-summary:empty{ display:none; }
+.reviews-summary{
+  margin:6px 18px 14px; padding:16px 20px; background:var(--white); border:1px solid var(--border);
+  border-radius:var(--radius-md); display:flex; align-items:center; gap:16px;
+}
+.reviews-summary .rs-score{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.reviews-summary .rs-num{ font-family:var(--font-head); font-size:34px; font-weight:700; line-height:1; color:var(--text); }
+.reviews-summary .review-stars{ margin:0; }
+.reviews-summary .rs-based{ font-size:13px; color:var(--text-muted); width:100%; }
+.reviews-summary .rs-bars{ display:none; }

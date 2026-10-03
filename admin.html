@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Admin | Shortlet Magnificent</title>
+<!-- SEO:start -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon.png" sizes="512x512">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0f172b">
+<!-- SEO:end -->
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -391,6 +397,10 @@ textarea{ resize:none !important; }
 .hp-row{ display:flex; gap:12px; align-items:flex-start; }
 .hp-thumb{ width:72px; height:72px; flex:0 0 72px; border-radius:12px; overflow:hidden; background:var(--navy-deep); display:flex; align-items:center; justify-content:center; }
 .hp-thumb img{ width:100%; height:100%; object-fit:cover; }
+.hp-sub{ font-size:15px; font-weight:800; margin:4px 0 6px; }
+.hp-video{ width:200px; flex:0 0 200px; aspect-ratio:16 / 9; border-radius:12px; overflow:hidden; background:var(--navy-deep); display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.6); font-size:12.5px; }
+.hp-video video{ width:100%; height:100%; object-fit:cover; background:#000; }
+@media (max-width:560px){ #hpHeroVideoBox .hp-row{ flex-direction:column; } .hp-video{ width:100%; flex-basis:auto; } }
 .hp-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
 .hp-fields .admin-field{ margin-bottom:0; }
 .hp-icon-preview{ width:44px; height:44px; flex:0 0 44px; border-radius:12px; background:var(--navy-deep); display:flex; align-items:center; justify-content:center; }
@@ -696,7 +706,7 @@ textarea{ resize:none !important; }
         <h2>Home page sections</h2>
         <p class="admin-help">Change what visitors see on the home page: <strong>Popular Locations</strong>, <strong>Browse by Type</strong>, <strong>Why Choose Us</strong>, <strong>Amenities</strong> and the <strong>Trust badges &amp; numbers</strong> at the top.</p>
         <div class="admin-toolbar" id="homeTabs" style="margin-bottom:0;">
-          <button type="button" class="admin-btn admin-btn-sm admin-btn-gold" data-tab="hero">Hero photos</button>
+          <button type="button" class="admin-btn admin-btn-sm admin-btn-gold" data-tab="hero">Hero video &amp; photos</button>
           <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="locations">Locations</button>
           <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="styles">Browse by type</button>
           <button type="button" class="admin-btn admin-btn-sm admin-btn-outline" data-tab="why">Why choose us</button>
@@ -706,7 +716,17 @@ textarea{ resize:none !important; }
       </div>
 
       <div class="admin-card" id="panelHpHero" hidden>
-        <h2>Hero photos</h2>
+        <h2>Hero video &amp; photos</h2>
+
+        <h3 class="hp-sub">Hero video</h3>
+        <p class="admin-help">A short video that plays silently on a loop behind the title at the top of the home page. When a video is saved it plays <strong>instead of the photos</strong> below. The photos still show while the video loads, and for guests who have data saver on. Best results: MP4 (H.264), landscape, 10&ndash;20 seconds, under 40&nbsp;MB.</p>
+        <div id="hpHeroVideoBox"></div>
+        <div class="admin-toolbar" style="margin:14px 0 26px;">
+          <button type="button" class="admin-btn admin-btn-gold" id="hpSaveHeroVideo">Save video</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="hpRemoveHeroVideo">Remove video</button>
+        </div>
+
+        <h3 class="hp-sub">Hero photos</h3>
         <p class="admin-help">The big photos at the very top of the home page. They fade from one to the next in the order below. Use wide/landscape photos, up to 8.</p>
         <div id="hpHeroBox"></div>
         <div class="admin-toolbar" style="margin:14px 0 0;">
@@ -904,6 +924,16 @@ textarea{ resize:none !important; }
         </form>
       </div>
 
+      <div class="admin-card" id="seoCard">
+        <h2>Google (SEO)</h2>
+        <p class="admin-help">The sitemap is the list of pages you give Google so it finds every apartment. The one in the website already lists the original apartments. <strong>After you add or delete apartments, make a fresh one here</strong>, then upload it to GitHub (replace <code>sitemap.xml</code>) and resubmit it in Google Search Console.</p>
+        <div class="admin-toolbar" style="margin:0;">
+          <button type="button" class="admin-btn admin-btn-gold" id="sitemapDownload">Download sitemap.xml</button>
+          <button type="button" class="admin-btn admin-btn-outline" id="sitemapCopy">Copy sitemap text</button>
+        </div>
+        <p class="hp-status" id="sitemapStatus" style="margin-top:10px;"></p>
+      </div>
+
       <div class="admin-card">
         <h2>Admin access</h2>
         <p class="admin-help">These people can sign in at the <strong>admin sign-in screen</strong>. Only add someone who already has an account on the website (they sign up as a guest first).</p>
@@ -1095,6 +1125,60 @@ function adminUploadPhoto(file){
     return (cfg.cloud && cfg.preset)
       ? adminWithTimeout(adminCloudinaryUpload(blob, cfg), 45000, "The photo upload took too long.")
       : adminWithTimeout(adminStorageUpload(blob), 12000, "The photo upload took too long.");
+  });
+}
+
+/* ---------- Video uploads (Cloudinary if set up in Settings, else Firebase Storage) ---------- */
+var ADMIN_VIDEO_MAX_BYTES = 40 * 1024 * 1024;
+function adminCloudinaryVideoUpload(file, cfg, onProgress){
+  return new Promise(function(resolve, reject){
+    var uid = "magnificent_video_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+    var fd = new FormData();
+    fd.append("file", file);
+    fd.append("public_id", uid);
+    fd.append("upload_preset", cfg.preset);
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "https://api.cloudinary.com/v1_1/" + encodeURIComponent(cfg.cloud) + "/video/upload");
+    xhr.timeout = 5 * 60 * 1000;
+    xhr.upload.onprogress = function(e){ if(e.lengthComputable && onProgress) onProgress(Math.round(e.loaded / e.total * 100)); };
+    xhr.onload = function(){
+      var json = null;
+      try{ json = JSON.parse(xhr.responseText); }catch(e){}
+      if(json && json.secure_url) resolve(json.secure_url);
+      else reject(new Error((json && json.error && json.error.message) || "The video host rejected the upload."));
+    };
+    xhr.onerror = function(){ reject(new Error("Network problem while uploading. Check your internet connection and try again.")); };
+    xhr.ontimeout = function(){ reject(new Error("The video upload took too long. Try a smaller or shorter video.")); };
+    xhr.send(fd);
+  });
+}
+function adminStorageVideoUpload(file, onProgress){
+  return new Promise(function(resolve, reject){
+    if(typeof adminApp.storage !== "function"){ reject(new Error("Video upload isn't available right now.")); return; }
+    var m = file.name.match(/\.(mp4|mov|webm|m4v)$/i);
+    var ext = m ? m[0].toLowerCase() : ".mp4";
+    var ref = adminApp.storage().ref("photos/hero_video_" + Date.now().toString(36) + ext);
+    var task = ref.put(file, { contentType: file.type || "video/mp4" });
+    task.on("state_changed", function(snap){
+      if(onProgress && snap.totalBytes) onProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100));
+    }, function(err){
+      if(err && err.code === "storage/unauthorized") reject(new Error("Firebase Storage didn't allow the video. Set up Cloudinary in Settings (best for video), or allow videos in your Storage rules."));
+      else reject(new Error((err && err.message) || "The video upload failed."));
+    }, function(){
+      task.snapshot.ref.getDownloadURL().then(resolve, reject);
+    });
+  });
+}
+// Resolves to the public URL of the uploaded video.
+function adminUploadVideo(file, onProgress){
+  if(!/^video\//i.test(file.type || "") && !/\.(mp4|mov|webm|m4v)$/i.test(file.name || "")){
+    return Promise.reject(new Error("Please choose a video file (MP4 is best)."));
+  }
+  if(file.size > ADMIN_VIDEO_MAX_BYTES){
+    return Promise.reject(new Error("That video is " + Math.round(file.size / 1048576) + " MB. Please keep it under 40 MB — a 10 to 20 second clip is plenty."));
+  }
+  return adminLoadUploadConfig().then(function(cfg){
+    return (cfg.cloud && cfg.preset) ? adminCloudinaryVideoUpload(file, cfg, onProgress) : adminStorageVideoUpload(file, onProgress);
   });
 }
 
@@ -2502,6 +2586,48 @@ function initSettingsPage(){
   });
 
   /* ---------- Photo uploads ---------- */
+  /* ---------- Sitemap for Google ---------- */
+  (function(){
+    var SEO_SITE = "https://shortletmagnificent.com";
+    var STATIC = [["/", "1.0", "weekly"], ["/properties.html", "0.9", "daily"], ["/gallery.html", "0.6", "weekly"], ["/reviews.html", "0.5", "weekly"],
+      ["/about.html", "0.5", "monthly"], ["/faq.html", "0.5", "monthly"], ["/help.html", "0.4", "monthly"], ["/privacy.html", "0.2", "yearly"], ["/terms.html", "0.2", "yearly"]];
+    function xmlEsc(s){ return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function buildSitemap(){
+      return DataService.listProperties().then(function(list){
+        var today = new Date().toISOString().slice(0, 10);
+        var rows = STATIC.map(function(r){
+          return "  <url><loc>" + SEO_SITE + r[0] + "</loc><lastmod>" + today + "</lastmod><changefreq>" + r[2] + "</changefreq><priority>" + r[1] + "</priority></url>";
+        });
+        list.forEach(function(p){
+          if(!p || !p.id) return;
+          rows.push("  <url><loc>" + xmlEsc(SEO_SITE + "/property.html?id=" + encodeURIComponent(p.id)) + "</loc><lastmod>" + today + "</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>");
+        });
+        return { xml: '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + rows.join("\n") + "\n</urlset>\n", count: list.length };
+      });
+    }
+    function status(t){ var s = document.getElementById("sitemapStatus"); if(s) s.textContent = t; }
+    document.getElementById("sitemapDownload").addEventListener("click", function(){
+      status("Making your sitemap…");
+      buildSitemap().then(function(r){
+        var blob = new Blob([r.xml], { type: "application/xml" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = "sitemap.xml";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+        status("Done: " + STATIC.length + " pages + " + r.count + " apartments. Upload sitemap.xml to GitHub.");
+      }).catch(function(err){ status("Couldn't make it: " + err.message); });
+    });
+    document.getElementById("sitemapCopy").addEventListener("click", function(){
+      status("Making your sitemap…");
+      buildSitemap().then(function(r){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          return navigator.clipboard.writeText(r.xml).then(function(){ status("Copied (" + STATIC.length + " pages + " + r.count + " apartments). Paste it into sitemap.xml on GitHub."); });
+        }
+        status("Your browser blocked copying. Use Download instead.");
+      }).catch(function(err){ status("Couldn't make it: " + err.message); });
+    });
+  })();
+
   var photoForm = document.getElementById("photoHostForm");
   AdminData.getSettings().then(function(s){
     photoForm.cloudinaryCloud.value = s.cloudinaryCloud || "";
@@ -2767,7 +2893,11 @@ function showHomeTab(tab){
 
 function hpReset(contentId){
   if(!confirm("Go back to the original list? Your edits to this section will be removed.")) return;
-  DataService.deleteContent(contentId).then(function(){
+  // The hero also holds the video — restoring the photos must not delete it.
+  var undo = (contentId === "hero" && heroVideoSaved)
+    ? DataService.saveContent("hero", { items: [], video: { url: heroVideoSaved } })
+    : DataService.deleteContent(contentId);
+  undo.then(function(){
     adminToast("Original restored.");
     showHomeTab(homeTab);
   }).catch(function(err){ adminToast("Couldn't restore: " + err.message); });
@@ -2775,13 +2905,75 @@ function hpReset(contentId){
 
 /* ---------- Hero photos ---------- */
 var HERO_DEFAULTS = ["images/bg-1.jpg", "images/bg-2.jpg", "images/bg-3.jpg", "images/bg-4.jpg"];
+var heroVideoDraft = "", heroVideoSaved = "", heroItemsSaved = [];
 function loadHpHero(){
   DataService.getContent("hero").then(function(c){
-    var items = c && Array.isArray(c.items) && c.items.length ? c.items.map(function(x){ return x.img || ""; }) : HERO_DEFAULTS;
+    var saved = c && Array.isArray(c.items) ? c.items.map(function(x){ return { img: x.img || "" }; }) : [];
+    heroItemsSaved = saved;
+    heroVideoSaved = (c && c.video && c.video.url) ? String(c.video.url) : "";
+    heroVideoDraft = heroVideoSaved;
+    var items = saved.length ? saved.map(function(x){ return x.img; }) : HERO_DEFAULTS;
     hpDraft.hero = items.map(function(u){ return { img: u }; });
     renderHpHero();
+    renderHpHeroVideo();
   });
 }
+function renderHpHeroVideo(statusText){
+  var box = document.getElementById("hpHeroVideoBox");
+  if(!box) return;
+  box.innerHTML =
+    '<div class="hp-row">' +
+      '<div class="hp-video">' + (heroVideoDraft ? '<video controls muted playsinline preload="metadata" src="' + adminEsc(heroVideoDraft) + '"></video>' : '<span>No video yet</span>') + '</div>' +
+      '<div class="hp-fields">' +
+        '<div class="admin-field"><input type="text" id="hpVideoLink" placeholder="Video link (https://… .mp4)" value="' + adminEsc(heroVideoDraft) + '"></div>' +
+        '<label class="admin-btn admin-btn-outline admin-btn-sm" style="align-self:flex-start;cursor:pointer;">Upload video<input type="file" id="hpVideoFile" accept="video/*" style="display:none"></label>' +
+        '<span class="hp-status" id="hpVideoStatus">' + adminEsc(statusText || (heroVideoSaved && heroVideoSaved === heroVideoDraft ? "This video is live on the home page." : "")) + '</span>' +
+      '</div>' +
+    '</div>';
+}
+function setHpVideoStatus(t){ var s = document.getElementById("hpVideoStatus"); if(s) s.textContent = t; }
+function validVideoUrl(u){ return /^(https:\/\/|http:\/\/|videos\/|\/videos\/|images\/|\/images\/)/i.test(u); }
+function saveHpHeroVideo(){
+  var url = String(heroVideoDraft || "").trim();
+  if(url && !validVideoUrl(url)){ adminToast("The video link must start with https://"); return; }
+  DataService.saveContent("hero", { items: heroItemsSaved, video: { url: url } }).then(function(){
+    heroVideoSaved = url;
+    heroVideoDraft = url;
+    renderHpHeroVideo(url ? "Saved. This video is live on the home page." : "Video removed. The home page shows the photos again.");
+    adminToast(url ? "Hero video saved. The home page plays it now." : "Hero video removed.");
+  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+}
+(function wireHeroVideo(){
+  var box = document.getElementById("hpHeroVideoBox");
+  if(!box) return;
+  box.addEventListener("input", function(e){
+    if(e.target.id === "hpVideoLink") heroVideoDraft = e.target.value;
+  });
+  box.addEventListener("change", function(e){
+    if(e.target.id === "hpVideoLink"){
+      heroVideoDraft = e.target.value.trim();
+      renderHpHeroVideo(heroVideoDraft ? "Link changed. Press “Save video” to publish it." : "");
+      return;
+    }
+    if(e.target.id !== "hpVideoFile") return;
+    var file = e.target.files && e.target.files[0];
+    if(!file) return;
+    setHpVideoStatus("Uploading… 0%");
+    adminUploadVideo(file, function(p){ setHpVideoStatus("Uploading… " + p + "%"); }).then(function(url){
+      heroVideoDraft = url;
+      renderHpHeroVideo("Uploaded. Press “Save video” to put it on the home page.");
+    }).catch(function(err){
+      setHpVideoStatus("Couldn't upload: " + err.message);
+    });
+  });
+  document.getElementById("hpSaveHeroVideo").addEventListener("click", saveHpHeroVideo);
+  document.getElementById("hpRemoveHeroVideo").addEventListener("click", function(){
+    if(!heroVideoDraft && !heroVideoSaved){ adminToast("There's no video to remove."); return; }
+    if(!confirm("Remove the hero video? The home page will show the photos again.")) return;
+    heroVideoDraft = "";
+    saveHpHeroVideo();
+  });
+})();
 function renderHpHero(){
   var box = document.getElementById("hpHeroBox");
   var list = hpDraft.hero;
@@ -2804,7 +2996,8 @@ function saveHpHero(){
   for(var i = 0; i < items.length; i++){
     if(!safeImgUrl(items[i].img)){ adminToast("Photo " + (i + 1) + ": the link must start with https://"); return; }
   }
-  DataService.saveContent("hero", { items: items }).then(function(){
+  DataService.saveContent("hero", { items: items, video: { url: heroVideoSaved || "" } }).then(function(){
+    heroItemsSaved = items;
     hpDraft.hero = items;
     renderHpHero();
     adminToast("Hero photos saved. The home page shows them now.");

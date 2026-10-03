@@ -371,7 +371,7 @@ function propertyCardHTML(p){
       </button>
     </div>
     <div class="property-info">
-      <h3>${p.title}</h3>
+      <h3><a class="property-card-link" href="property.html?id=${encodeURIComponent(p.id)}">${p.title}</a></h3>
       <p class="property-loc">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21C12 21 19 15.1 19 10.2C19 6.2 15.9 3 12 3C8.1 3 5 6.2 5 10.2C5 15.1 12 21 12 21Z" stroke="#9AA3B2" stroke-width="1.8"/><circle cx="12" cy="10" r="2.3" stroke="#9AA3B2" stroke-width="1.8"/></svg>
         ${p.location}
@@ -1246,6 +1246,89 @@ function renderHeroPhotos(c){
 }
 
 /* ==========================================================
+   HERO VIDEO
+   The admin can add a looping video (Home page -> Hero video & photos).
+   It plays on top of the photos; the photos stay underneath as the
+   placeholder while it loads and as the fallback if it can't play.
+========================================================== */
+let heroVideoUrl = null;
+
+function safeVideoUrl(u){
+  u = String(u || "").trim();
+  return /^(https:\/\/|http:\/\/|videos\/|\/videos\/|images\/|\/images\/)/i.test(u) ? u : "";
+}
+
+// Cloudinary can convert any upload to a small web-friendly MP4 on the fly,
+// which also makes iPhone .mov clips play everywhere. The original stays as a backup.
+function heroVideoSources(url){
+  const m = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)(v\d+\/.+?)(\.[A-Za-z0-9]+)?$/);
+  if(m){
+    return [
+      { url: m[1] + "f_mp4,vc_h264,q_auto,w_1280/" + m[2] + ".mp4", type: "video/mp4" },
+      { url, type: "" }
+    ];
+  }
+  const ext = ((url.split("?")[0].match(/\.([A-Za-z0-9]+)$/) || [])[1] || "").toLowerCase();
+  const types = { mp4: "video/mp4", m4v: "video/mp4", webm: "video/webm" };
+  return [{ url, type: types[ext] || "" }];
+}
+
+function renderHeroVideo(c){
+  const wrap = document.getElementById("heroVideoWrap");
+  if(!wrap) return;
+  const url = safeVideoUrl(c && c.video && c.video.url);
+  try{
+    if(url) localStorage.setItem("dh_hero_video", url);
+    else localStorage.removeItem("dh_hero_video");
+  }catch(e){}
+  if(url === heroVideoUrl) return;          // nothing changed
+  heroVideoUrl = url;
+  wrap.innerHTML = "";
+  if(!url) return;
+
+  // Respect guests who asked for less motion or less data
+  if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const conn = navigator.connection;
+  if(conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ""))) return;
+
+  const v = document.createElement("video");
+  v.muted = true; v.defaultMuted = true; v.loop = true; v.autoplay = true; v.playsInline = true;
+  v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("webkit-playsinline", "");
+  v.setAttribute("disablepictureinpicture", ""); v.setAttribute("aria-hidden", "true");
+  v.tabIndex = -1;
+  v.preload = "auto";
+
+  const sources = heroVideoSources(url);
+  const nodes = sources.map((src) => {
+    const el = document.createElement("source");
+    el.src = src.url;
+    if(src.type) el.type = src.type;
+    v.appendChild(el);
+    return el;
+  });
+  const last = nodes[nodes.length - 1];
+
+  // Couldn't play at all -> remove it; the photos underneath keep showing
+  v.addEventListener("error", (e) => {
+    if(e.target === v || e.target === last){ if(v.parentNode) v.parentNode.removeChild(v); }
+  }, true);
+  v.addEventListener("playing", () => v.classList.add("on"));
+
+  wrap.appendChild(v);
+  const start = () => { const p = v.play(); if(p && p.catch) p.catch(() => {}); };
+  v.addEventListener("loadeddata", start);
+  start();
+
+  // Save battery and data: pause while the hero is off screen or the tab is hidden
+  if("IntersectionObserver" in window){
+    new IntersectionObserver((entries) => {
+      entries.forEach((en) => { if(en.isIntersecting) start(); else v.pause(); });
+    }, { threshold: 0.05 }).observe(wrap);
+  }
+  document.addEventListener("visibilitychange", () => { if(document.hidden) v.pause(); else start(); });
+}
+
+/* ==========================================================
    AUTH (Firebase Authentication)
 ========================================================== */
 function goToLogin(){
@@ -1324,8 +1407,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
   if(document.getElementById("heroMedia")){
+    // Show last visit's hero video straight away; the saved setting then confirms or changes it
+    try{
+      const cachedVideo = localStorage.getItem("dh_hero_video");
+      if(cachedVideo) renderHeroVideo({ video: { url: cachedVideo } });
+    }catch(e){}
     DataService.getContent("hero")
-      .then(renderHeroPhotos)
+      .then((c) => { renderHeroPhotos(c); if(c) renderHeroVideo(c); })
       .catch((error) => {
         console.error("Error loading hero images:", error);
       });

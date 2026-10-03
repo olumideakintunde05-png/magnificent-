@@ -34,13 +34,58 @@
       </div>`;
   }
 
+  /* ---------- Google star rating ----------
+     Built live from the reviews shown on this page, so what Google reads always
+     matches what visitors see. Uses exactly the reviews that are showing (at least MIN_FOR_STARS). */
+  const SEO_SITE = "https://shortletmagnificent.com";
+  const MIN_FOR_STARS = 1;
+  // A review is only used (shown, counted, sent to Google) when it has a name, text and a 1-5 rating.
+  function isValidReview(r){
+    const v = Number(r && r.rating);
+    return !!(r && r.name && r.text && v >= 1 && v <= 5);
+  }
+  function applyReviewsSEO(reviews){
+    try{
+      let ld = document.getElementById("reviewsLd");
+      const valid = (reviews || []).filter(isValidReview);
+      if(valid.length < MIN_FOR_STARS){ if(ld) ld.remove(); return; }
+      const sum = valid.reduce((s, r) => s + Number(r.rating), 0);
+      const node = {
+        "@type": "LodgingBusiness",
+        "@id": SEO_SITE + "/#business",
+        "name": "Shortlet Magnificent",
+        "url": SEO_SITE + "/",
+        "image": SEO_SITE + "/og-image.jpg",
+        "telephone": "+234 814 223 0897",
+        "address": { "@type": "PostalAddress", "addressLocality": "Lagos", "addressCountry": "NG" },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": (Math.round(sum / valid.length * 10) / 10).toFixed(1),
+          "reviewCount": valid.length,
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "review": valid.slice(0, 20).map(r => ({
+          "@type": "Review",
+          "author": { "@type": "Person", "name": String(r.name) },
+          "reviewRating": { "@type": "Rating", "ratingValue": String(Number(r.rating)), "bestRating": "5", "worstRating": "1" },
+          "reviewBody": String(r.text)
+        }))
+      };
+      if(!ld){ ld = document.createElement("script"); ld.type = "application/ld+json"; ld.id = "reviewsLd"; document.head.appendChild(ld); }
+      ld.textContent = JSON.stringify({ "@context": "https://schema.org", "@graph": [node] });
+    }catch(e){ console.warn("Review markup skipped:", e); }
+  }
+
   DataService.listReviews()
-    .then((reviews) => {
-      if (!reviews || reviews.length === 0) {
+    .then((all) => {
+      const reviews = (all || []).filter(isValidReview);
+      if (reviews.length === 0) {
         root.innerHTML = `<p style="padding:32px 16px;color:#6B7383;font-size:14px;text-align:center;">No reviews yet. Be the first to share your experience!</p>`;
         return;
       }
       renderSummary(reviews);
+      applyReviewsSEO(reviews);
       root.innerHTML = reviews.map(r => `
         <div class="review-page-card">
           <div class="review-stars">${starRow(r.rating)}</div>
