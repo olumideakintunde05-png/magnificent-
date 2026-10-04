@@ -236,12 +236,15 @@ body.admin-body #bookedToast{ display:none !important; }
 
 /* ---------- Toast ---------- */
 .admin-toast{
-  position:fixed; left:50%; bottom:24px; transform:translate(-50%,12px);
-  background:var(--navy-deep); color:var(--white); padding:12px 20px; border-radius:999px;
-  font-size:13.5px; font-weight:600; box-shadow:var(--shadow-elevated);
-  opacity:0; pointer-events:none; transition:all 0.25s ease; z-index:80;
+  position:fixed; left:50%; top:84px; transform:translate(-50%,-12px);
+  width:max-content; max-width:calc(100vw - 28px);
+  background:var(--navy-deep); color:var(--white); padding:14px 22px; border-radius:16px;
+  border:2px solid var(--gold); text-align:center;
+  font-size:15px; font-weight:700; line-height:1.4; box-shadow:var(--shadow-elevated);
+  opacity:0; pointer-events:none; transition:all 0.25s ease; z-index:400;
 }
 .admin-toast.show{ opacity:1; transform:translate(-50%,0); }
+.admin-toast.error{ background:#7a1a27; border-color:#f3b4bc; }
 
 /* ---------- Gate / login-required screen ---------- */
 .admin-gate{
@@ -727,13 +730,14 @@ textarea{ resize:none !important; }
         </div>
 
         <h3 class="hp-sub">Hero photos</h3>
-        <p class="admin-help">The big photos at the very top of the home page. They fade from one to the next in the order below. Use wide/landscape photos, up to 8.</p>
+        <p class="admin-help">The big photos at the very top of the home page. They fade from one to the next in the order below. Use wide/landscape photos, up to 8. <strong>To use only your video, delete all the photos and press Save photos.</strong></p>
         <div id="hpHeroBox"></div>
         <div class="admin-toolbar" style="margin:14px 0 0;">
           <button type="button" class="admin-btn admin-btn-outline" id="hpAddHero">+ Add photo</button>
           <button type="button" class="admin-btn admin-btn-gold" id="hpSaveHero">Save photos</button>
           <button type="button" class="admin-btn admin-btn-outline" id="hpResetHero">Restore original</button>
         </div>
+        <p class="hp-status" id="hpPhotosStatus" style="margin-top:10px;"></p>
       </div>
 
       <div class="admin-card" id="panelHpLocations" hidden>
@@ -1272,10 +1276,12 @@ function adminToast(message){
     el.className = "admin-toast";
     document.body.appendChild(el);
   }
+  var isProblem = /couldn'?t|can'?t|failed|must|please|add at least|there'?s no|not allowed|error|unauthorized/i.test(String(message));
   el.textContent = message;
+  el.classList.toggle("error", isProblem);
   el.classList.add("show");
   clearTimeout(el._t);
-  el._t = setTimeout(function(){ el.classList.remove("show"); }, 2800);
+  el._t = setTimeout(function(){ el.classList.remove("show"); }, isProblem ? 6000 : 4000);
 }
 
 /* ---------- Small helpers ---------- */
@@ -2926,7 +2932,7 @@ function hpReset(contentId){
   if(!confirm("Go back to the original list? Your edits to this section will be removed.")) return;
   // The hero also holds the video — restoring the photos must not delete it.
   var undo = (contentId === "hero" && heroVideoSaved)
-    ? DataService.saveContent("hero", { items: [], video: { url: heroVideoSaved } })
+    ? DataService.saveContent("hero", { items: [], noPhotos: false, video: { url: heroVideoSaved } })
     : DataService.deleteContent(contentId);
   undo.then(function(){
     adminToast("Original restored.");
@@ -2936,14 +2942,15 @@ function hpReset(contentId){
 
 /* ---------- Hero photos ---------- */
 var HERO_DEFAULTS = ["images/bg-1.jpg", "images/bg-2.jpg", "images/bg-3.jpg", "images/bg-4.jpg"];
-var heroVideoDraft = "", heroVideoSaved = "", heroItemsSaved = [];
+var heroVideoDraft = "", heroVideoSaved = "", heroItemsSaved = [], heroNoPhotosSaved = false;
 function loadHpHero(){
   DataService.getContent("hero").then(function(c){
     var saved = c && Array.isArray(c.items) ? c.items.map(function(x){ return { img: x.img || "" }; }) : [];
     heroItemsSaved = saved;
+    heroNoPhotosSaved = !!(c && c.noPhotos === true);
     heroVideoSaved = (c && c.video && c.video.url) ? String(c.video.url) : "";
     heroVideoDraft = heroVideoSaved;
-    var items = saved.length ? saved.map(function(x){ return x.img; }) : HERO_DEFAULTS;
+    var items = heroNoPhotosSaved ? [] : (saved.length ? saved.map(function(x){ return x.img; }) : HERO_DEFAULTS);
     hpDraft.hero = items.map(function(u){ return { img: u }; });
     renderHpHero();
     renderHpHeroVideo();
@@ -2967,7 +2974,7 @@ function validVideoUrl(u){ return /^(https:\/\/|http:\/\/|videos\/|\/videos\/|im
 function saveHpHeroVideo(){
   var url = String(heroVideoDraft || "").trim();
   if(url && !validVideoUrl(url)){ adminToast("The video link must start with https://"); return; }
-  DataService.saveContent("hero", { items: heroItemsSaved, video: { url: url } }).then(function(){
+  DataService.saveContent("hero", { items: heroItemsSaved, noPhotos: heroNoPhotosSaved, video: { url: url } }).then(function(){
     heroVideoSaved = url;
     heroVideoDraft = url;
     renderHpHeroVideo(url ? "Saved. This video is live on the home page." : "Video removed. The home page shows the photos again.");
@@ -3021,18 +3028,29 @@ function renderHpHero(){
       '</div></div>';
   }).join("");
 }
+function heroPhotosMsg(text){
+  var s = document.getElementById("hpPhotosStatus");
+  if(s) s.textContent = text;
+  adminToast(text);
+}
 function saveHpHero(){
   var items = hpDraft.hero.map(function(l){ return { img: String(l.img || "").trim() }; }).filter(function(l){ return l.img; });
-  if(!items.length){ adminToast("Add at least one photo."); return; }
-  for(var i = 0; i < items.length; i++){
-    if(!safeImgUrl(items[i].img)){ adminToast("Photo " + (i + 1) + ": the link must start with https://"); return; }
+  if(!items.length){
+    var warn = heroVideoSaved
+      ? "Remove all the hero photos? The top of the home page will show only your video."
+      : "Remove all the hero photos? You have no hero video saved, so the top of the home page will be plain dark blue.";
+    if(!confirm(warn)) return;
   }
-  DataService.saveContent("hero", { items: items, video: { url: heroVideoSaved || "" } }).then(function(){
+  for(var i = 0; i < items.length; i++){
+    if(!safeImgUrl(items[i].img)){ heroPhotosMsg("Photo " + (i + 1) + ": the link must start with https://"); return; }
+  }
+  DataService.saveContent("hero", { items: items, noPhotos: items.length === 0, video: { url: heroVideoSaved || "" } }).then(function(){
     heroItemsSaved = items;
+    heroNoPhotosSaved = items.length === 0;
     hpDraft.hero = items;
     renderHpHero();
-    adminToast("Hero photos saved. The home page shows them now.");
-  }).catch(function(err){ adminToast("Couldn't save: " + err.message); });
+    heroPhotosMsg(items.length ? "Hero photos saved. The home page shows them now." : "Photos removed. The home page shows only the video.");
+  }).catch(function(err){ heroPhotosMsg("Couldn't save: " + err.message); });
 }
 
 /* ---------- Locations ---------- */

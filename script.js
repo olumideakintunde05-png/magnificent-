@@ -1272,18 +1272,48 @@ function setupHeroBgRotation(){
   }, 5000);
 }
 
-// Photos chosen by the admin (Home page -> Hero photos) replace the built-in ones.
+// The built-in photos are only used when the admin hasn't chosen anything.
+// If the admin deletes every photo (to use only the video) nothing is shown here.
+const HERO_DEFAULT_PHOTOS = ["images/bg-1.jpg", "images/bg-2.jpg", "images/bg-3.jpg", "images/bg-4.jpg"];
+let heroDecided = false;
+
+function showHeroPhotos(urls){
+  const box = document.getElementById("heroMedia");
+  if(!box) return;
+  heroDecided = true;
+  box.innerHTML = urls.map((u, i) =>
+    `<img class="hero-bg-slide${i === 0 ? " active" : ""}" src="${escHTML(u)}" alt="Shortlet Magnificent luxury shortlet apartments in Lagos"${i ? ' loading="lazy"' : ' fetchpriority="high" decoding="async"'}>`
+  ).join("");
+  heroIdx = 0;
+}
+
+// Runs before the saved settings arrive, so returning visitors never see a flash
+// of photos that the admin has removed.
+function initHeroPhotos(){
+  if(!document.getElementById("heroMedia")) return;
+  let mode = null;
+  try{ mode = localStorage.getItem("dh_hero_photos"); }catch(e){}
+  if(mode === "none"){ heroDecided = true; return; }
+  if(mode === "show"){ showHeroPhotos(HERO_DEFAULT_PHOTOS); return; }
+  // First visit: give the settings a moment, then fall back to the built-in photos.
+  setTimeout(() => { if(!heroDecided) showHeroPhotos(HERO_DEFAULT_PHOTOS); }, 2500);
+}
+
+// Photos chosen by the admin (Home page -> Hero video & photos) replace the built-in ones.
 function renderHeroPhotos(c){
   const box = document.getElementById("heroMedia");
+  if(!box) return;
+  const noPhotos = !!(c && c.noPhotos === true);
+  try{ localStorage.setItem("dh_hero_photos", noPhotos ? "none" : "show"); }catch(e){}
+  if(noPhotos){ heroDecided = true; box.innerHTML = ""; return; }
   const urls = c && Array.isArray(c.items) ? c.items.map((x) => safeImgUrl(x && x.img)).filter(Boolean) : [];
-  if(!box || !urls.length) return;
+  if(!urls.length){
+    if(!box.querySelector(".hero-bg-slide")) showHeroPhotos(HERO_DEFAULT_PHOTOS);
+    return;
+  }
   const first = new Image();
-  first.onload = () => {
-    box.innerHTML = urls.map((u, i) =>
-      `<img class="hero-bg-slide${i === 0 ? " active" : ""}" src="${escHTML(u)}" alt="Shortlet Magnificent apartment"${i ? ' loading="lazy"' : ""}>`
-    ).join("");
-    heroIdx = 0;
-  };
+  first.onload = () => showHeroPhotos(urls);
+  first.onerror = () => { if(!box.querySelector(".hero-bg-slide")) showHeroPhotos(HERO_DEFAULT_PHOTOS); };
   first.src = urls[0];
 }
 
@@ -1315,6 +1345,12 @@ function heroVideoSources(url){
   return [{ url, type: types[ext] || "" }];
 }
 
+// A still picture from the video, shown while it loads when no photos are used.
+function heroVideoPoster(url){
+  const m = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)(v\d+\/.+?)(\.[A-Za-z0-9]+)?$/);
+  return m ? m[1] + "so_0,w_1280,q_auto,f_jpg/" + m[2] + ".jpg" : "";
+}
+
 function renderHeroVideo(c){
   const wrap = document.getElementById("heroVideoWrap");
   if(!wrap) return;
@@ -1326,7 +1362,10 @@ function renderHeroVideo(c){
   if(url === heroVideoUrl) return;          // nothing changed
   heroVideoUrl = url;
   wrap.innerHTML = "";
+  wrap.style.removeProperty("--hero-poster");
   if(!url) return;
+  const poster = heroVideoPoster(url);
+  if(poster) wrap.style.setProperty("--hero-poster", 'url("' + poster + '")');
 
   // Respect guests who asked for less motion or less data
   if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -1449,6 +1488,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
   if(document.getElementById("heroMedia")){
+    initHeroPhotos();
     // Show last visit's hero video straight away; the saved setting then confirms or changes it
     try{
       const cachedVideo = localStorage.getItem("dh_hero_video");
@@ -1458,6 +1498,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .then((c) => { renderHeroPhotos(c); if(c) renderHeroVideo(c); })
       .catch((error) => {
         console.error("Error loading hero images:", error);
+        if(!heroDecided) showHeroPhotos(HERO_DEFAULT_PHOTOS);
       });
   }
   if(document.getElementById("locationChips")){
