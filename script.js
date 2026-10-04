@@ -1367,11 +1367,11 @@ function renderHeroVideo(c){
   const poster = heroVideoPoster(url);
   if(poster) wrap.style.setProperty("--hero-poster", 'url("' + poster + '")');
 
-  // Respect guests who asked for less motion or less data
-  if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const conn = navigator.connection;
-  if(conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ""))) return;
+  const debug = heroDebugLogger();
+  const conn = navigator.connection || {};
+  debug("autoplay on | saveData:" + !!conn.saveData + " | reduced-motion:" + !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) + " | net:" + (conn.effectiveType || "?"));
 
+  // Plays by itself, silently and on a loop, like the background video on other websites.
   const v = document.createElement("video");
   v.muted = true; v.defaultMuted = true; v.loop = true; v.autoplay = true; v.playsInline = true;
   v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("webkit-playsinline", "");
@@ -1388,25 +1388,69 @@ function renderHeroVideo(c){
     return el;
   });
   const last = nodes[nodes.length - 1];
+  debug("trying: " + sources[0].url.replace(/^https:\/\/res\.cloudinary\.com\/[^/]+/, "…"));
 
-  // Couldn't play at all -> remove it; the photos underneath keep showing
+  const tryPlay = () => {
+    const p = v.play();
+    if(p && p.catch) p.catch((err) => debug("play refused: " + (err && err.name)));
+  };
+
+  v.addEventListener("playing", () => { v.__ok = true; v.classList.add("on"); debug("PLAYING (" + (v.currentSrc || "").slice(-40) + ")"); });
+  // Both files failed -> remove the video; the still picture / photos stay
   v.addEventListener("error", (e) => {
+    debug("error on " + (e.target.tagName || "?") + " code:" + (v.error ? v.error.code : "-"));
     if(e.target === v || e.target === last){ if(v.parentNode) v.parentNode.removeChild(v); }
   }, true);
-  v.addEventListener("playing", () => v.classList.add("on"));
 
   wrap.appendChild(v);
-  const start = () => { const p = v.play(); if(p && p.catch) p.catch(() => {}); };
-  v.addEventListener("loadeddata", start);
-  start();
+  v.addEventListener("loadeddata", tryPlay);
+  v.addEventListener("canplay", tryPlay);
+  tryPlay();
+
+  // Some phones refuse to autoplay until the visitor first touches the page.
+  // The first tap, key press or click then starts it quietly. No button needed.
+  const unlockEvents = ["touchend", "pointerup", "click", "keydown"];
+  const unlock = () => {
+    if(v.__ok){ unlockEvents.forEach((e) => window.removeEventListener(e, unlock)); return; }
+    debug("starting after the first touch");
+    tryPlay();
+  };
+  unlockEvents.forEach((e) => window.addEventListener(e, unlock, { passive: true }));
+
+  // The converted copy can be slow the first time it is made. If nothing plays
+  // after 6 seconds, switch to the original file straight away.
+  if(sources.length > 1){
+    setTimeout(() => {
+      if(v.__ok || !v.parentNode) return;
+      debug("slow start -> switching to the original file");
+      v.innerHTML = "";
+      v.src = sources[sources.length - 1].url;
+      v.load();
+      tryPlay();
+    }, 6000);
+  }
 
   // Save battery and data: pause while the hero is off screen or the tab is hidden
+  const resume = () => { if(!document.hidden && v.parentNode) tryPlay(); };
   if("IntersectionObserver" in window){
     new IntersectionObserver((entries) => {
-      entries.forEach((en) => { if(en.isIntersecting) start(); else v.pause(); });
+      entries.forEach((en) => { if(en.isIntersecting) resume(); else v.pause(); });
     }, { threshold: 0.05 }).observe(wrap);
   }
-  document.addEventListener("visibilitychange", () => { if(document.hidden) v.pause(); else start(); });
+  document.addEventListener("visibilitychange", () => { if(document.hidden) v.pause(); else resume(); });
+}
+
+// Open the home page with ?hero=debug to see why the video does or doesn't start
+function heroDebugLogger(){
+  if(!/[?&]hero=debug\b/.test(location.search)) return () => {};
+  let el = document.getElementById("heroDebug");
+  if(!el){
+    el = document.createElement("pre");
+    el.id = "heroDebug";
+    el.style.cssText = "position:fixed;left:6px;right:6px;bottom:84px;z-index:99999;margin:0;padding:8px 10px;background:rgba(0,0,0,.85);color:#9f9;font:11px/1.45 monospace;white-space:pre-wrap;word-break:break-all;border-radius:8px;pointer-events:none";
+    document.body.appendChild(el);
+  }
+  return (m) => { el.textContent += m + "\n"; };
 }
 
 /* ==========================================================
