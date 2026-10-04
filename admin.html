@@ -924,6 +924,15 @@ textarea{ resize:none !important; }
         </form>
       </div>
 
+      <div class="admin-card" id="alertCard">
+        <h2>Booking alerts by email</h2>
+        <p class="admin-help">Every time a guest books, an email is sent to your admin address with the apartment, dates, guest name, phone and payment status. Press the button to send yourself a test email and check that it arrives (look in Spam too).</p>
+        <div class="admin-toolbar" style="margin:0;">
+          <button type="button" class="admin-btn admin-btn-gold" id="sendTestAlert">Send test email</button>
+        </div>
+        <p class="hp-status" id="testAlertStatus" style="margin-top:10px;"></p>
+      </div>
+
       <div class="admin-card" id="seoCard">
         <h2>Google (SEO)</h2>
         <p class="admin-help">The sitemap is the list of pages you give Google so it finds every apartment. The one in the website already lists the original apartments. <strong>After you add or delete apartments, make a fresh one here</strong>, then upload it to GitHub (replace <code>sitemap.xml</code>) and resubmit it in Google Search Console.</p>
@@ -2586,6 +2595,28 @@ function initSettingsPage(){
   });
 
   /* ---------- Photo uploads ---------- */
+  /* ---------- Test the booking alert email ---------- */
+  (function(){
+    var btn = document.getElementById("sendTestAlert");
+    var out = document.getElementById("testAlertStatus");
+    if(!btn) return;
+    btn.addEventListener("click", function(){
+      out.textContent = "Sending…";
+      btn.disabled = true;
+      fetch("/.netlify/functions/send-booking-email", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ test: true })
+      }).then(function(r){
+        return r.json().catch(function(){ return null; }).then(function(j){ return { status: r.status, body: j }; });
+      }).then(function(res){
+        if(res.status === 404){ out.textContent = "The email function isn't on your site yet. Upload it to GitHub first, then try again."; return; }
+        if(res.body && res.body.ok) out.textContent = "Sent! Check your inbox (and Spam). If it arrives, booking alerts are working.";
+        else out.textContent = "Couldn't send: " + ((res.body && res.body.error) || ("error " + res.status));
+      }).catch(function(){
+        out.textContent = "Couldn't reach your site. Check your internet connection and try again.";
+      }).then(function(){ btn.disabled = false; });
+    });
+  })();
+
   /* ---------- Sitemap for Google ---------- */
   (function(){
     var SEO_SITE = "https://shortletmagnificent.com";

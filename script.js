@@ -1060,6 +1060,31 @@ function setupModal(){
   });
 }
 
+/* Emails the admin when a booking comes in (sent by the Netlify function, so the
+   Resend key never touches the website). Never blocks or breaks the booking. */
+function notifyAdminOfBooking(entry, orderNo){
+  try{
+    const body = JSON.stringify({
+      id: entry.id, orderNo: orderNo || entry.orderNo || "",
+      property: entry.property, propertyLocation: entry.propertyLocation || "",
+      name: entry.name, phone: entry.phone,
+      checkin: entry.checkin, checkout: entry.checkout, nights: entry.nights, guests: entry.guests,
+      total: entry.total, discount: entry.discount || 0, promo: entry.promo || "",
+      paymentMethod: entry.paymentMethod, reference: entry.reference || "",
+      submittedAt: entry.submittedAt
+    });
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const send = (attempt) => fetch("/.netlify/functions/send-booking-email", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true
+    }).then((r) => {
+      if(r.status >= 500 && attempt < 3) return wait(4000).then(() => send(attempt + 1));
+    }).catch(() => {
+      if(attempt < 3) return wait(4000).then(() => send(attempt + 1));
+    });
+    send(1);
+  }catch(e){ console.warn("Booking alert not sent:", e); }
+}
+
 function saveEnquiry(entry){
   const list = JSON.parse(localStorage.getItem("dh_enquiries") || "[]");
   if(!entry.id) entry.id = "enq_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -1072,8 +1097,24 @@ function saveEnquiry(entry){
   // admin panel and from the guest's other devices. If it fails (offline,
   // Firestore not enabled yet), the local copy above still lets the guest
   // see it on this device, and the WhatsApp handoff still goes through.
+  // The admin alert goes out as soon as the order number is ready, or after a few
+  // seconds at most, so a slow database never delays it.
+  let alerted = false;
+  const alertAdmin = (orderNo) => { if(alerted) return; alerted = true; notifyAdminOfBooking(entry, orderNo); };
+  setTimeout(() => alertAdmin(), 6000);
+
+  if(typeof DataService === "undefined") alertAdmin();
   if(typeof DataService !== "undefined"){
-    DataService.createEnquiry(entry).then((saved) => {
+    let saving = null;
+    try{
+      saving = DataService.createEnquiry(entry);
+    }catch(err){
+      // Firestore couldn't even start (offline / blocked). The booking must still go through.
+      alertAdmin();
+      console.warn("Enquiry saved locally but not to Firestore:", err && err.message);
+    }
+    if(saving) saving.then((saved) => {
+      alertAdmin(saved && saved.orderNo);
       if(!saved || !saved.orderNo) return;
       // Keep the order number on this device's copy and tell the guest.
       const copy = JSON.parse(localStorage.getItem("dh_enquiries") || "[]");
@@ -1082,6 +1123,7 @@ function saveEnquiry(entry){
       const msg = document.querySelector("#modalSuccess p");
       if(msg) msg.textContent += " Order number: " + saved.orderNo + ".";
     }).catch((err) => {
+      alertAdmin();
       console.warn("Enquiry saved locally but not to Firestore:", err.message);
     });
   }
