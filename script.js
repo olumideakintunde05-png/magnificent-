@@ -789,14 +789,12 @@ function setupModal(){
   const checkinEl = form.querySelector('[name="checkin"]');
   const checkoutEl = form.querySelector('[name="checkout"]');
   const summaryEl = document.getElementById("priceSummary");
-  const paymentBtns = modal.querySelectorAll(".payment-btn");
   const paymentHint = document.getElementById("paymentHint");
   const submitBtn = document.getElementById("modalSubmitBtn");
   let currentPrice = 0;
   let currentTitle = "";
   let currentProperty = null;
   let guests = 1;
-  let paymentMethod = "Paystack";
   let appliedPromo = null;      // { code, discount } once a valid code is entered
   let promoCheckId = 0;
 
@@ -834,7 +832,12 @@ function setupModal(){
     const nights = nightsBetween();
     if(!currentPrice || nights === 0) return 0;
     const discounted = Math.max(0, currentPrice * nights - discountNow());
-    return discounted + Math.round(discounted * 0.05);
+    return discounted + Math.round(discounted * 0.05) + cautionFee();
+  }
+  // Refundable caution (security) deposit, set in config.js.
+  function cautionFee(){
+    const n = Number((window.SITE_CONFIG || {}).cautionFee);
+    return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
   // Are the chosen dates free? Returns a message, or "" if they're fine.
@@ -885,11 +888,13 @@ function setupModal(){
       const discount = discountNow();
       const discounted = Math.max(0, subtotal - discount);
       const serviceFee = Math.round(discounted * 0.05);
-      const total = discounted + serviceFee;
+      const caution = cautionFee();
+      const total = discounted + serviceFee + caution;
       summaryEl.innerHTML = `
         <div class="summary-row"><span>${money(currentPrice)} × ${nights} night${nights > 1 ? "s" : ""}</span><span>${money(subtotal)}</span></div>
         ${discount ? `<div class="summary-row"><span>Promo ${appliedPromo.code}</span><span>−${money(discount)}</span></div>` : ""}
         <div class="summary-row"><span>Service fee</span><span>${money(serviceFee)}</span></div>
+        ${caution ? `<div class="summary-row"><span>Refundable caution fee</span><span>${money(caution)}</span></div>` : ""}
         <div class="summary-row total"><span>Total</span><span>${money(total)}</span></div>`;
     }
     updateSubmitButton();
@@ -897,14 +902,8 @@ function setupModal(){
 
   function updateSubmitButton(){
     if(!submitBtn) return;
-    const total = currentTotal();
-    if(paymentMethod === "Paystack"){
-      submitBtn.textContent = total ? `Pay ${money(total)} with Paystack` : "Pay with Paystack";
-      if(paymentHint) paymentHint.textContent = "Pay securely by card, transfer or USSD through Paystack.";
-    } else {
-      submitBtn.textContent = "Continue on WhatsApp";
-      if(paymentHint) paymentHint.textContent = "We'll open WhatsApp with your booking details filled in — pay by bank transfer once we confirm availability.";
-    }
+    submitBtn.textContent = "Get Invoice & Pay by Transfer";
+    if(paymentHint) paymentHint.textContent = "Payment is by bank transfer. Your invoice and our account details open on the next screen and are emailed to you.";
   }
 
   guestMinus?.addEventListener("click", () => {
@@ -928,14 +927,6 @@ function setupModal(){
   checkinEl?.addEventListener("change", onDatesChanged);
   checkoutEl?.addEventListener("change", onDatesChanged);
   promoInput?.addEventListener("input", revalidatePromo);
-  paymentBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      paymentBtns.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      paymentMethod = btn.dataset.method;
-      updateSubmitButton();
-    });
-  });
 
   window.openInspectionModal = function(propertyTitle, priceValue, property){
     modal.classList.remove("success");
@@ -948,9 +939,6 @@ function setupModal(){
     checkoutEl.min = checkinEl.min;
     guests = 1;
     if(guestCountEl) guestCountEl.textContent = "1";
-    paymentBtns.forEach(b => b.classList.remove("active"));
-    paymentBtns[0]?.classList.add("active");
-    paymentMethod = paymentBtns[0]?.dataset.method || "Paystack";
     currentPrice = priceValue || 0;
     currentTitle = propertyTitle || "";
     document.getElementById("modalPropertyName").textContent = propertyTitle ? `For: ${propertyTitle}` : "";
@@ -969,64 +957,10 @@ function setupModal(){
   overlay.addEventListener("click", close);
   closeBtn.addEventListener("click", close);
 
-  function whatsAppCheckoutLink(fd, nights, total){
-    const lines = [
-      `Hi, I'd like to book: ${currentTitle || "a stay"}`,
-      fd.get("checkin") && fd.get("checkout") ? `Dates: ${fd.get("checkin")} to ${fd.get("checkout")} (${nights} night${nights > 1 ? "s" : ""})` : "",
-      `Guests: ${guests}`,
-      total ? `Estimated total: ${money(total)}` : "",
-      appliedPromo ? `Promo code: ${appliedPromo.code} (−${money(appliedPromo.discount)})` : "",
-      `Name: ${fd.get("name")}`,
-      `Phone: ${fd.get("phone")}`
-    ].filter(Boolean).join("\n");
-    return `https://wa.me/${((window.SITE_CONTACT || {}).whatsapp || "2348142230897").replace(/\D/g, "")}?text=${encodeURIComponent(lines)}`;
-  }
-
-  function payWithPaystack(fd, nights, total){
-    const key = window.SITE_CONFIG?.paystackPublicKey;
-    if(!key || key.startsWith("__")){
-      showToast("Online payment isn't set up yet — please use WhatsApp to book.");
-      return;
-    }
-    if(typeof PaystackPop === "undefined"){
-      showToast("Payment couldn't load. Check your connection and try again.");
-      return;
-    }
-    const handler = PaystackPop.setup({
-      key,
-      email: fd.get("email") || `${(fd.get("phone")||"guest").replace(/\D/g,"")}@guest.shortletmagnificent.com`,
-      amount: Math.max(total, 1) * 100, // kobo
-      currency: "NGN",
-      metadata: {
-        property: currentTitle,
-        checkin: fd.get("checkin"),
-        checkout: fd.get("checkout"),
-        guests,
-        name: fd.get("name"),
-        phone: fd.get("phone")
-      },
-      callback: function(response){
-        saveEnquiry({
-          property: currentTitle || "General Enquiry",
-          ...(currentProperty && currentProperty.location ? { propertyLocation: currentProperty.location } : {}),
-          name: fd.get("name"), phone: fd.get("phone"),
-          checkin: fd.get("checkin"), checkout: fd.get("checkout"),
-          guests, promo: appliedPromo ? appliedPromo.code : "", discount: discountNow(),
-          paymentMethod: "Paystack", nights, total,
-          reference: response.reference,
-          submittedAt: new Date().toISOString()
-        });
-        modal.classList.add("success");
-        document.querySelector("#modalSuccess p").textContent = "Payment received! Your booking is confirmed — check WhatsApp for your receipt.";
-        setTimeout(close, 5000);
-      },
-      onClose: function(){}
-    });
-    handler.openIframe();
-  }
-
+  let submitting = false;
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+    if(submitting) return;
     const fd = new FormData(form);
     const nights = nightsBetween();
     const total = currentTotal();
@@ -1037,41 +971,77 @@ function setupModal(){
     }
     const problem = checkDates();
     if(problem){ showToast(problem); return; }
-
-    if(paymentMethod === "Paystack"){
-      payWithPaystack(fd, nights, total);
+    const email = String(fd.get("email") || "").trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+      showToast("Please enter a valid email address so we can send your invoice.");
       return;
     }
 
-    // Transfer / WhatsApp path
-    saveEnquiry({
+    // Price breakdown shown on the invoice (and emailed).
+    const subtotal = currentPrice * nights;
+    const discount = discountNow();
+    const discounted = Math.max(0, subtotal - discount);
+    const serviceFee = Math.round(discounted * 0.05);
+    const caution = cautionFee();
+    const contact = window.SITE_CONTACT || {};
+
+    // Only these fields go to the database (its rules allow nothing else).
+    // The email address and price breakdown stay on the invoice only.
+    const entry = {
       property: currentTitle || "General Enquiry",
       ...(currentProperty && currentProperty.location ? { propertyLocation: currentProperty.location } : {}),
       name: fd.get("name"), phone: fd.get("phone"),
       checkin: fd.get("checkin"), checkout: fd.get("checkout"),
-      guests, promo: appliedPromo ? appliedPromo.code : "", discount: discountNow(),
+      guests, promo: appliedPromo ? appliedPromo.code : "", discount,
       paymentMethod: "Transfer", nights, total,
       submittedAt: new Date().toISOString()
-    });
-    window.open(whatsAppCheckoutLink(fd, nights, total), "_blank", "noopener");
-    modal.classList.add("success");
-    document.querySelector("#modalSuccess p").textContent = "Booking request sent! Continue the conversation on WhatsApp to confirm your dates and pay.";
-    setTimeout(close, 5000);
+    };
+    const invoice = {
+      email, unitPrice: currentPrice, subtotal, serviceFee, caution,
+      repPhone: (contact.phone || "08142230897")
+    };
+
+    // Nothing is saved to the admin panel yet. The guest gets their invoice
+    // (page + email) and the order is only created when they tap
+    // "I've sent the payment" on the invoice page.
+    submitting = true;
+    if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = "Preparing your invoice…"; }
+    entry.id = "enq_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+    saveDraft(entry, invoice);
+    notifyAdminOfBooking(entry, "", invoice, "invoice");   // emails the invoice to the guest
+    setTimeout(() => { window.location.href = "invoice.html?id=" + encodeURIComponent(entry.id); }, 350);
   });
 }
 
 /* Emails the admin when a booking comes in (sent by the Netlify function, so the
    Resend key never touches the website). Never blocks or breaks the booking. */
-function notifyAdminOfBooking(entry, orderNo){
+/* A booking the guest has not paid for yet lives only on their own device. */
+function saveDraft(entry, extra){
+  try{
+    const drafts = JSON.parse(localStorage.getItem("dh_drafts") || "{}");
+    drafts[entry.id] = entry;
+    localStorage.setItem("dh_drafts", JSON.stringify(drafts));
+    const inv = JSON.parse(localStorage.getItem("dh_invoices") || "{}");
+    inv[entry.id] = Object.assign({}, extra || {});
+    localStorage.setItem("dh_invoices", JSON.stringify(inv));
+  }catch(e){ console.warn("Couldn't keep the invoice on this device:", e); }
+}
+
+/* kind "booking" = alert the admin that the guest says they've paid;
+   kind "invoice" = email the invoice to the guest. */
+function notifyAdminOfBooking(entry, orderNo, extra, kind){
   try{
     const body = JSON.stringify({
+      kind: kind === "invoice" ? "invoice" : "booking",
       id: entry.id, orderNo: orderNo || entry.orderNo || "",
       property: entry.property, propertyLocation: entry.propertyLocation || "",
       name: entry.name, phone: entry.phone,
       checkin: entry.checkin, checkout: entry.checkout, nights: entry.nights, guests: entry.guests,
       total: entry.total, discount: entry.discount || 0, promo: entry.promo || "",
       paymentMethod: entry.paymentMethod, reference: entry.reference || "",
-      submittedAt: entry.submittedAt
+      submittedAt: entry.submittedAt,
+      email: (extra && extra.email) || "", unitPrice: (extra && extra.unitPrice) || 0,
+      serviceFee: (extra && extra.serviceFee) || 0, caution: (extra && extra.caution) || 0
     });
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const send = (attempt) => fetch("/.netlify/functions/send-booking-email", {
@@ -1085,13 +1055,26 @@ function notifyAdminOfBooking(entry, orderNo){
   }catch(e){ console.warn("Booking alert not sent:", e); }
 }
 
-function saveEnquiry(entry){
+function saveEnquiry(entry, extra){
+  return new Promise((resolve) => {
+    saveEnquiryNow(entry, extra, resolve);
+    setTimeout(resolve, 4500);   // never keep the guest waiting on a slow database
+  });
+}
+
+function saveEnquiryNow(entry, extra, done){
   const list = JSON.parse(localStorage.getItem("dh_enquiries") || "[]");
   if(!entry.id) entry.id = "enq_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
   const user = (typeof Auth !== "undefined") ? Auth.currentUser() : null;
   if(user) entry.uid = user.uid;
   list.unshift(entry);
   localStorage.setItem("dh_enquiries", JSON.stringify(list));
+  // The invoice details (email, price breakdown) are kept on this device only.
+  try{
+    const inv = JSON.parse(localStorage.getItem("dh_invoices") || "{}");
+    inv[entry.id] = Object.assign({}, extra || {});
+    localStorage.setItem("dh_invoices", JSON.stringify(inv));
+  }catch(e){}
 
   // Best-effort: also write to Firestore so this enquiry is visible in the
   // admin panel and from the guest's other devices. If it fails (offline,
@@ -1100,7 +1083,7 @@ function saveEnquiry(entry){
   // The admin alert goes out as soon as the order number is ready, or after a few
   // seconds at most, so a slow database never delays it.
   let alerted = false;
-  const alertAdmin = (orderNo) => { if(alerted) return; alerted = true; notifyAdminOfBooking(entry, orderNo); };
+  const alertAdmin = (orderNo) => { if(alerted) return; alerted = true; notifyAdminOfBooking(entry, orderNo, extra); };
   setTimeout(() => alertAdmin(), 6000);
 
   if(typeof DataService === "undefined") alertAdmin();
@@ -1115,15 +1098,15 @@ function saveEnquiry(entry){
     }
     if(saving) saving.then((saved) => {
       alertAdmin(saved && saved.orderNo);
-      if(!saved || !saved.orderNo) return;
+      if(!saved || !saved.orderNo){ done(); return; }
       // Keep the order number on this device's copy and tell the guest.
       const copy = JSON.parse(localStorage.getItem("dh_enquiries") || "[]");
       const mine = copy.find((x) => x.id === entry.id);
       if(mine){ mine.orderNo = saved.orderNo; localStorage.setItem("dh_enquiries", JSON.stringify(copy)); }
-      const msg = document.querySelector("#modalSuccess p");
-      if(msg) msg.textContent += " Order number: " + saved.orderNo + ".";
+      done();
     }).catch((err) => {
       alertAdmin();
+      done();
       console.warn("Enquiry saved locally but not to Firestore:", err.message);
     });
   }
@@ -1573,5 +1556,22 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch((error) => {
         console.error("Error loading trust content:", error);
       });
+  }
+});
+
+
+/* ==========================================================
+   GLOBAL: "Back" links marked data-back return to the page the
+   visitor came from (falls back to the home page if they opened
+   the page directly).
+========================================================== */
+document.addEventListener("click", function(e){
+  const a = e.target.closest && e.target.closest("a[data-back]");
+  if(!a) return;
+  let sameSite = false;
+  try{ sameSite = !!document.referrer && new URL(document.referrer).origin === location.origin; }catch(err){}
+  if(sameSite && history.length > 1){
+    e.preventDefault();
+    history.back();
   }
 });
