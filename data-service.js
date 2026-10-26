@@ -133,6 +133,46 @@ window.DataService = (function(){
   function orderNoFor(n){
     return "magnificent-shortlet " + String(n).padStart(3, "0");
   }
+
+  // The running order / invoice number. Admins can read it and restart it.
+  function getOrderCounter(){
+    return collection("counters").doc("orders").get().then(function(snap){
+      return snap.exists ? (Number(snap.data().n) || 0) : 0;
+    });
+  }
+  function setOrderCounter(n){
+    n = Math.max(0, Math.floor(Number(n) || 0));
+    return collection("counters").doc("orders").set({ n: n }).then(function(){ return n; });
+  }
+
+
+  // Admin only: wipes every booking (and its proof of payment and "just booked"
+  // pop-up entry) and restarts the numbering. Used to clear test orders.
+  function deleteAllBookings(){
+    function refsOf(name){
+      return collection(name).get().then(function(snap){ return snap.docs.map(function(x){ return x.ref; }); });
+    }
+    function deleteRefs(refs){
+      var chain = Promise.resolve();
+      for(var i = 0; i < refs.length; i += 400){
+        (function(chunk){
+          chain = chain.then(function(){
+            var batch = db().batch();
+            chunk.forEach(function(r){ batch.delete(r); });
+            return batch.commit();
+          });
+        })(refs.slice(i, i + 400));
+      }
+      return chain;
+    }
+    return refsOf("paymentProofs").then(function(proofRefs){
+      var fileRefs = proofRefs.map(function(r){ return collection("paymentProofFiles").doc(r.id); });
+      return deleteRefs(fileRefs).then(function(){ return deleteRefs(proofRefs); });
+    }).then(function(){ return refsOf("enquiries").then(deleteRefs); })
+      .then(function(){ return refsOf("bookingFeed").then(deleteRefs); })
+      .then(function(){ return setOrderCounter(0); });
+  }
+
   function createEnquiry(entry){
     if(!entry.id) entry.id = "enq_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
     var data = Object.assign({ status: "New" }, entry);
@@ -255,6 +295,62 @@ window.DataService = (function(){
     return collection("enquiries").doc(id).update({ status: status });
   }
 
+
+  /* ---------- Proof of payment (guest uploads a screenshot / photo) ----------
+     Stored in two small collections so the admin list stays light:
+       paymentProofs/<enquiryId>      details (who, when, file name)
+       paymentProofFiles/<enquiryId>  the picture itself (compressed JPEG data URL) */
+  function compressImage(file, maxSide, maxChars){
+    return new Promise(function(resolve, reject){
+      if(!file || !/^image\//.test(file.type)){ reject(new Error("Please choose a photo or screenshot (JPG or PNG).")); return; }
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error("Couldn't read that file.")); };
+      reader.onload = function(){
+        var img = new Image();
+        img.onerror = function(){ reject(new Error("Couldn't open that image. Try a screenshot instead.")); };
+        img.onload = function(){
+          var scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          var w = Math.max(1, Math.round(img.width * scale)), h = Math.max(1, Math.round(img.height * scale));
+          var c = document.createElement("canvas"); c.width = w; c.height = h;
+          var ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+          var q = 0.82, out = c.toDataURL("image/jpeg", q);
+          while(out.length > maxChars && q > 0.35){ q -= 0.1; out = c.toDataURL("image/jpeg", q); }
+          if(out.length > maxChars){ reject(new Error("That image is too large. Try a screenshot instead.")); return; }
+          resolve(out);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function uploadPaymentProof(enq, file){
+    if(!enq || !enq.id) return Promise.reject(new Error("Missing booking."));
+    return compressImage(file, 1400, 800000).then(function(dataUrl){
+      var id = enq.id;
+      return collection("paymentProofFiles").doc(id).set({ data: dataUrl, mime: "image/jpeg" }).then(function(){
+        return collection("paymentProofs").doc(id).set({
+          enquiryId: id, orderNo: enq.orderNo || "", name: String(enq.name || "").slice(0, 120),
+          fileName: String(file.name || "proof").slice(0, 120), size: dataUrl.length,
+          acceptedTerms: true, uploadedAt: new Date().toISOString()
+        });
+      });
+    });
+  }
+
+  function listPaymentProofs(){
+    if(!db()) return Promise.resolve([]);
+    return collection("paymentProofs").get().then(function(snap){
+      return snap.docs.map(function(d){ return Object.assign({ id: d.id }, d.data()); });
+    }).catch(function(err){
+      console.warn("DataService.listPaymentProofs failed:", err.message);
+      return [];
+    });
+  }
+
+  function getPaymentProofImage(id){
+    return collection("paymentProofFiles").doc(id).get().then(function(d){ return d.exists ? d.data().data : ""; });
+  }
 
   /* ---------- Gallery (admin-managed photos & videos) ---------- */
   function listGallery(opts){
@@ -795,11 +891,18 @@ window.DataService = (function(){
     promoDiscount: promoDiscount,
     availabilityProblem: availabilityProblem,
     createEnquiry: createEnquiry,
+    getOrderCounter: getOrderCounter,
+    setOrderCounter: setOrderCounter,
+    deleteAllBookings: deleteAllBookings,
+    orderNoFor: orderNoFor,
     assignOrderNumbers: assignOrderNumbers,
     showReceipt: showReceipt,
     listAllEnquiries: listAllEnquiries,
     listEnquiriesForUser: listEnquiriesForUser,
     setEnquiryStatus: setEnquiryStatus,
+    uploadPaymentProof: uploadPaymentProof,
+    listPaymentProofs: listPaymentProofs,
+    getPaymentProofImage: getPaymentProofImage,
     listGallery: listGallery,
     galleryFeed: galleryFeed,
     seedGalleryFromProperties: seedGalleryFromProperties,
