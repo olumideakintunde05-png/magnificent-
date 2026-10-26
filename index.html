@@ -485,6 +485,7 @@
       <a href="about.html">About Us</a>
       <a href="privacy.html">Privacy Policy</a>
       <a href="terms.html">Terms of Service</a>
+      <a href="booking-policy.html">Booking Policy</a>
     </div>
     <div class="footer-bottom">
       <p class="footer-copy" data-cms="footer_copy" data-cms-lines>© 2026 Shortlet Magnificent.<br>Premium shortlet apartments across Lagos.</p>
@@ -548,35 +549,30 @@
     <label>Phone Number
       <input type="tel" name="phone" required placeholder="e.g. 080 000 00000">
     </label>
-    <label>Email (for payment receipt)
-      <input type="email" name="email" placeholder="you@example.com">
+    <label>Email (we'll send your invoice here)
+      <input type="email" name="email" required placeholder="you@example.com">
     </label>
     <label>Promo Code (optional)
       <input type="text" name="promo" placeholder="Promo code (optional)">
     </label>
 
     <div class="payment-methods">
-      <p class="payment-label">Payment Method</p>
-      <div class="payment-options two-up">
-        <button type="button" class="payment-btn active" data-method="Paystack">⚡ Pay Online (Paystack)</button>
-        <button type="button" class="payment-btn" data-method="Transfer">🏦 Transfer via WhatsApp</button>
-      </div>
-      <p class="payment-hint" id="paymentHint">Pay securely by card, transfer or USSD through Paystack.</p>
+      <p class="payment-label">Payment</p>
+      <p class="payment-hint" id="paymentHint">Payment is by bank transfer. Your invoice and our account details open on the next screen and are emailed to you.</p>
     </div>
 
     <div class="price-summary" id="priceSummary"></div>
 
-    <button type="submit" class="btn btn-gold btn-full" id="modalSubmitBtn">Pay with Paystack</button>
+    <button type="submit" class="btn btn-gold btn-full" id="modalSubmitBtn">Get Invoice &amp; Pay by Transfer</button>
   </form>
   <div class="modal-success" id="modalSuccess">
     <svg viewBox="0 0 24 24" width="40" height="40" fill="none"><circle cx="12" cy="12" r="10" stroke="#2E9E5B" stroke-width="1.8"/><path d="M8 12.5L10.5 15L16 9" stroke="#2E9E5B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <p>Booking request sent! We'll confirm availability and send payment details on WhatsApp shortly.</p>
+    <p>Your invoice is ready. Taking you to the payment details…</p>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
