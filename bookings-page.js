@@ -59,6 +59,7 @@
           <span>${esc(item.phone || "")}</span>
         </div>
         <button type="button" class="btn btn-outline btn-full" data-receipt="${esc(item.id || "")}" style="margin-top:12px;color:var(--navy-deep);border-color:var(--border);background:var(--white);">View receipt</button>
+        ${item.id ? `<a class="btn btn-gold btn-full" href="invoice.html?id=${encodeURIComponent(item.id)}" style="margin-top:8px;text-align:center;">View invoice &amp; pay</a>` : ""}
       </article>
     `).join("") + `</div>`;
   }

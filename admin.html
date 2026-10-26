@@ -424,7 +424,7 @@ textarea{ resize:none !important; }
 <!-- ============ SIGN-IN SCREEN ============ -->
 <main class="admin-login" id="adminLoginView">
   <div class="admin-login-card">
-    <img class="admin-login-logo" src="images/logo-icon.png?v=2" alt="Shortlet Magnificent">
+    <img class="admin-login-logo" src="logo-icon.png?v=2" alt="Shortlet Magnificent">
     <p class="admin-login-eyebrow">SHORTLET MAGNIFICENT</p>
     <h1>Admin sign in</h1>
     <p class="admin-login-sub">For staff only. Guests can log in from the main website.</p>
@@ -584,6 +584,12 @@ textarea{ resize:none !important; }
     <section class="admin-section" id="section-bookings" data-title="Bookings" hidden>
       <div class="admin-card">
         <h2>Booking enquiries</h2>
+        <div id="orderCounterBox" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#fbf8f2;border:1px solid #e8dcc8;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+          <div style="flex:1;min-width:200px;font-size:14px;">Invoice / order number: <b id="orderCounterText">loading…</b><br><span style="font-size:12px;color:var(--text-muted);" id="orderCounterNext"></span></div>
+          <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" id="orderCounterSet">Set number…</button>
+          <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" id="orderCounterReset">Restart from 001</button>
+          <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" id="deleteAllBookings">Delete all bookings</button>
+        </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;" id="bookingFilters"></div>
         <div class="admin-table-wrap" id="bookingsTableWrap"></div>
       </div>
@@ -1689,7 +1695,10 @@ var STATUSES = ["New", "Contacted", "Confirmed", "Cancelled"];
 function initBookingsPage(){
   renderBookingFilters();
   renderBookingsTable();
+  refreshOrderCounter();
   document.getElementById("bookingsTableWrap").addEventListener("click", function(e){
+    var pf = e.target.closest("button[data-proof]");
+    if(pf){ showProofImage(pf.getAttribute("data-proof")); return; }
     var wa = e.target.closest("button[data-wa]");
     if(wa){
       var guest = bookingsCache.find(function(x){ return x.id === wa.dataset.wa; });
@@ -1716,10 +1725,71 @@ function setBookingFilter(s){
   renderBookingsTable();
 }
 
+function refreshOrderCounter(){
+  var t = document.getElementById("orderCounterText"), nx = document.getElementById("orderCounterNext");
+  if(!t) return;
+  DataService.getOrderCounter().then(function(n){
+    t.textContent = n ? DataService.orderNoFor(n) : "none yet";
+    nx.textContent = "The next booking will be " + DataService.orderNoFor(n + 1) + ".";
+  }).catch(function(err){ t.textContent = "couldn't load"; nx.textContent = err.message; });
+}
+function changeOrderCounter(n, question){
+  if(!window.confirm(question)) return;
+  DataService.setOrderCounter(n).then(function(){
+    refreshOrderCounter();
+    if(window.adminToast) adminToast("Order number updated.");
+  }).catch(function(err){ window.alert("Couldn't change it: " + err.message + "\n\nPublish the latest firestore.rules in Firebase and try again."); });
+}
+(function(){
+  document.addEventListener("click", function(e){
+    if(e.target.id === "deleteAllBookings"){
+      var typed = window.prompt("This permanently deletes EVERY booking, its proof of payment and the \"just booked\" pop-ups, and restarts the numbering at 001.\n\nType DELETE to confirm:");
+      if(typed !== "DELETE"){ if(typed !== null) window.alert("Nothing was deleted."); return; }
+      var btn = e.target; btn.disabled = true; btn.textContent = "Deleting…";
+      DataService.deleteAllBookings().then(function(){
+        btn.disabled = false; btn.textContent = "Delete all bookings";
+        refreshOrderCounter(); renderBookingsTable();
+        if(window.adminToast) adminToast("All bookings deleted.");
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = "Delete all bookings";
+        window.alert("Couldn't delete everything: " + err.message + "\n\nPublish the latest firestore.rules in Firebase and try again.");
+      });
+      return;
+    }
+    if(e.target.id === "orderCounterReset"){
+      changeOrderCounter(0, "Restart numbering?\n\nThe next booking will be " + DataService.orderNoFor(1) + ". Old bookings keep their numbers, so numbers will repeat.");
+    } else if(e.target.id === "orderCounterSet"){
+      var v = window.prompt("Which number should the NEXT booking get? (e.g. 1 for 001, 50 for 050)", "1");
+      if(v === null) return;
+      var next = parseInt(v, 10);
+      if(!(next >= 1)){ window.alert("Please enter a number from 1 up."); return; }
+      changeOrderCounter(next - 1, "The next booking will be " + DataService.orderNoFor(next) + ". Continue?");
+    }
+  });
+})();
+
+function showProofImage(id){
+  var old = document.getElementById("proofOverlay"); if(old) old.remove();
+  var ov = document.createElement("div");
+  ov.id = "proofOverlay";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(15,23,43,.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:14px;text-align:center;"><p id="proofMsg" style="margin:8px 0;">Loading proof of payment…</p><img id="proofImg" alt="Proof of payment" style="max-width:100%;display:none;border-radius:8px;"><div style="margin-top:12px;"><button type="button" class="admin-btn admin-btn-outline" id="proofClose">Close</button></div></div>';
+  ov.addEventListener("click", function(e){ if(e.target === ov || e.target.id === "proofClose") ov.remove(); });
+  document.body.appendChild(ov);
+  DataService.getPaymentProofImage(id).then(function(src){
+    if(!src){ document.getElementById("proofMsg").textContent = "No picture found for this booking."; return; }
+    var img = document.getElementById("proofImg"); img.src = src; img.style.display = "block";
+    document.getElementById("proofMsg").style.display = "none";
+  }).catch(function(err){ document.getElementById("proofMsg").textContent = "Couldn't load it: " + err.message; });
+}
+
 function renderBookingsTable(){
   var wrap = document.getElementById("bookingsTableWrap");
   wrap.innerHTML = '<p class="admin-empty">Loading enquiries…</p>';
-  AdminData.getBookings().then(function(all){
+  Promise.all([AdminData.getBookings(), DataService.listPaymentProofs()]).then(function(res){
+    var all = res[0];
+    var proofById = {};
+    res[1].forEach(function(p){ proofById[p.id] = p; });
     bookingsCache = all;
 
     // Older enquiries don't have an order number yet: number them once,
@@ -1741,7 +1811,7 @@ function renderBookingsTable(){
       return;
     }
 
-    wrap.innerHTML = '<table class="admin-table"><thead><tr><th>Order</th><th>Guest</th><th>Property</th><th>Dates</th><th>Guests</th><th>Total</th><th>Status</th><th>Receipt</th></tr></thead><tbody>' +
+    wrap.innerHTML = '<table class="admin-table"><thead><tr><th>Order</th><th>Guest</th><th>Property</th><th>Dates</th><th>Guests</th><th>Total</th><th>Status</th><th>Proof</th><th>Receipt</th></tr></thead><tbody>' +
       list.map(function(b){
         var statusOptions = STATUSES.map(function(s){
           return '<option value="' + s + '"' + (s === b.status ? " selected" : "") + '>' + s + '</option>';
@@ -1754,6 +1824,9 @@ function renderBookingsTable(){
           '<td>' + (b.guests||"—") + '</td>' +
           '<td>' + (b.total ? adminFormatMoney(b.total) : "—") + '</td>' +
           '<td><select onchange="onStatusChange(\'' + esc(b.id) + '\', this.value)">' + statusOptions + '</select></td>' +
+          '<td>' + (proofById[b.id]
+            ? '<button type="button" class="admin-btn admin-btn-gold admin-btn-sm" data-proof="' + esc(b.id) + '">View proof</button><br><span style="color:var(--text-muted);font-size:11.5px;">' + esc(adminFormatDate(proofById[b.id].uploadedAt)) + (proofById[b.id].acceptedTerms ? ' \u00b7 terms accepted' : '') + '</span>'
+            : '<span style="color:var(--text-muted);font-size:12px;">Not uploaded</span>') + '</td>' +
           '<td><div class="admin-row-actions"><button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-receipt="' + esc(b.id) + '">Receipt</button><button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-wa="' + esc(b.id) + '">WhatsApp</button></div></td>' +
         '</tr>';
       }).join("") + '</tbody></table>';
